@@ -71,6 +71,7 @@ func main() {
 	// ----- oauth ------
 	r.Handle("/login/facebook", http.HandlerFunc(oauth.FacebookLoginHandler))
 	r.Handle("/login/facebook/callback", http.HandlerFunc(oauth.HandleFacebookCallback))
+	r.Handle("/login/google", http.HandlerFunc(oauth.GoogleLoginHandler))
 	r.Handle("/login/microsoft", http.HandlerFunc(oauth.MicrosoftLoginHandler))
 	r.Handle("/login/microsoft/callback", http.HandlerFunc(oauth.HandleMicrosoftCallback))
 
@@ -90,16 +91,20 @@ func main() {
 
 func getKey(token *jwt.Token) (interface{}, error) {
 
+	// fetch the keys and parse to a jwk
 	set, err := jwk.FetchHTTP("https://www.googleapis.com/oauth2/v3/certs")
 	if err != nil {
 		return nil, err
 	}
 
+	// Get the key id from the header
+	// This is used to determine the key to use from the jwks
 	keyID, ok := token.Header["kid"].(string)
 	if !ok {
 		return nil, errors.New("expecting JWT header to have string kid")
 	}
 
+	// Retrieve the acutal key
 	if key := set.LookupKeyID(keyID); len(key) == 1 {
 		return key[0].Materialize()
 	}
@@ -195,7 +200,7 @@ func ValidateTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// Method used to verify user login. And grant a user a token
+// LoginHandler is used to verify user login. And grant a user a token
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	user := User{} //initialize empty user

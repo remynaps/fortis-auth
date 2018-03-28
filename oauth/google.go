@@ -1,45 +1,59 @@
 package oauth
 
 import (
-	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
+	"github.com/lestrrat/go-jwx/jwk"
 )
 
-type KeysResponse struct {
-	Collection []GoogleKey `json:"keys"`
-}
-
-// GoogleKey describes one of the values returned in the oauth2/v3 endpoint
-type GoogleKey struct {
-	Kty       string `json:"kty"`
-	Algorithm string `json:"alg"`
-	KeyID     string `json:"kid"`
-	Use       string `json:"use"`
-	Value     string `json:"n"`
-	E         string `json:"e"`
-}
-
 // RetrieveGoogleKeys Retieves the google public keys from the google api
-func RetrieveGoogleKeys() *KeysResponse {
-	keys := new(KeysResponse)
-	r, err := http.Get("https://www.googleapis.com/oauth2/v3/certs")
-	defer r.Body.Close()
-
-	json.NewDecoder(r.Body).Decode(keys)
-	log.Println(keys)
-
+func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
+	// fetch the keys and parse to a jwk
+	set, err := jwk.FetchHTTP("https://www.googleapis.com/oauth2/v3/certs")
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return keys
+
+	// Get the key id from the header
+	// This is used to determine the key to use from the jwks
+	keyID, ok := token.Header["kid"].(string)
+	if !ok {
+		return nil, errors.New("expecting JWT header to have string kid")
+	}
+
+	// Retrieve the acutal key
+	if key := set.LookupKeyID(keyID); len(key) == 1 {
+		return key[0].Materialize()
+	}
+
+	return nil, errors.New("unable to find key")
 }
 
-func VerifyIdToken(w http.ResponseWriter, r *http.Request) bool {
-	keys := RetrieveGoogleKeys()
+func GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Try to parse the token
+	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
+		retrieveGoogleKeys)
 
-	if keys != nil {
+	log.Println(token)
+	// There should be no error if the token is parsed
+	if err == nil {
+		if token.Valid {
+			// login or sign up
+		} else {
 
+			// Notify the client about the invalid token
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "Token is not valid")
+		}
+	} else {
+		log.Println(err)
+		// Client isnt authorized
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Unauthorized access to this resource")
 	}
-	return true
 }
