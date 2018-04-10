@@ -1,6 +1,7 @@
 package oauth
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -9,7 +10,24 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/lestrrat/go-jwx/jwk"
+	"github.com/remynaps/fortis/authorization"
 )
+
+func jsonResponse(response interface{}, w http.ResponseWriter) {
+
+	// Create a json object from the given interface type
+	json, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Json created, write success
+	w.WriteHeader(http.StatusOK)
+	log.Println(response)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(json)
+}
 
 // RetrieveGoogleKeys Retieves the google public keys from the google api
 func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
@@ -39,11 +57,11 @@ func GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
 		retrieveGoogleKeys)
 
-	log.Println(token)
 	// There should be no error if the token is parsed
 	if err == nil {
 		if token.Valid {
 			// login or sign up
+			jsonResponse(authorization.CreateToken(), w)
 		} else {
 
 			// Notify the client about the invalid token

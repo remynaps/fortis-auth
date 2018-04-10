@@ -1,59 +1,60 @@
 package oauth
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
-	"strings"
 
-	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/microsoft"
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
+	"github.com/lestrrat/go-jwx/jwk"
+	"github.com/remynaps/fortis/authorization"
 )
 
-var (
-	microsoftConfig = &oauth2.Config{
-		ClientID:     "",
-		ClientSecret: "",
-		RedirectURL:  "http://localhost:8080/login/microsoft/callback",
-		Scopes:       []string{"user.read"},
-		Endpoint:     microsoft.AzureADEndpoint(""), // empty = common
-	}
-	microsoftOauthStateString = "thisshouldberandom"
-)
-
-func MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
-	Url, err := url.Parse(microsoftConfig.Endpoint.AuthURL)
+// RetrieveGoogleKeys Retieves the google public keys from the google api
+func retrieveMicrosofteKeys(token *jwt.Token) (interface{}, error) {
+	// fetch the keys and parse to a jwk
+	set, err := jwk.FetchHTTP("https://login.microsoftonline.com/common/discovery/v2.0/keys")
 	if err != nil {
-		log.Fatal("Parse: ", err)
+		return nil, err
 	}
-	parameters := url.Values{}
-	parameters.Add("client_id", microsoftConfig.ClientID)
-	parameters.Add("scope", strings.Join(microsoftConfig.Scopes, " "))
-	parameters.Add("redirect_uri", microsoftConfig.RedirectURL)
-	parameters.Add("response_type", "code")
-	parameters.Add("state", microsoftOauthStateString)
-	Url.RawQuery = parameters.Encode()
-	url := Url.String()
-	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+
+	// Get the key id from the header
+	// This is used to determine the key to use from the jwks
+	keyID, ok := token.Header["kid"].(string)
+	if !ok {
+		return nil, errors.New("expecting JWT header to have string kid")
+	}
+
+	// Retrieve the acutal key
+	if key := set.LookupKeyID(keyID); len(key) == 1 {
+		return key[0].Materialize()
+	}
+
+	return nil, errors.New("unable to find key")
 }
 
-func HandleMicrosoftCallback(w http.ResponseWriter, r *http.Request) {
-	state := r.FormValue("state")
-	if state != microsoftOauthStateString {
-		fmt.Fprint(w, "invalid oauth state")
-		return
+func MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Try to parse the token
+	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
+		retrieveGoogleKeys)
+
+	// There should be no error if the token is parsed
+	if err == nil {
+		if token.Valid {
+			// login or sign up
+			jsonResponse(authorization.CreateToken(), w)
+		} else {
+
+			// Notify the client about the invalid token
+			w.WriteHeader(http.StatusUnauthorized)
+			fmt.Fprint(w, "Token is not valid")
+		}
+	} else {
+		log.Println(err)
+		// Client isnt authorized
+		w.WriteHeader(http.StatusUnauthorized)
+		fmt.Fprint(w, "Unauthorized access to this resource")
 	}
-	log.Println("recieved token")
-
-	code := r.FormValue("code")
-
-	token, err := microsoftConfig.Exchange(oauth2.NoContext, code)
-	if err != nil {
-		fmt.Fprint(w, "Exchange failed")
-		return
-	}
-
-	log.Println(token)
-
 }

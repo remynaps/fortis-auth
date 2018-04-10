@@ -1,36 +1,24 @@
 package main
 
 import (
-	"crypto/rsa"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/remynaps/fortis/authorization"
 	"github.com/remynaps/fortis/oauth"
+	"github.com/rs/cors"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/lestrrat/go-jwx/jwk"
-)
-
-const (
-	privKeyPath = "./config/jwt/app.rsa"
-	pubKeyPath  = "./config/jwt/app.rsa.pub"
-)
-
-var (
-	verifyKey *rsa.PublicKey
-	signKey   *rsa.PrivateKey
-	googleKey string
 )
 
 type Env struct {
@@ -54,39 +42,45 @@ type Token struct {
 	Token string `json:"token"`
 }
 
+const (
+	keyPath = "./config/jwt"
+)
+
 func main() {
 
 	// Get the rsa keys from the file system.
-	initKeys()
+	authorization.Init(keyPath)
 
 	// Init the http multiplexer
 	r := mux.NewRouter()
 
 	log.Println("starting server..")
 
-	//add handlers to the multiplexer
-	// ----- public handlers ------
-	r.Handle("/login", http.HandlerFunc(LoginHandler))
+	// Set up Cors
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:8080"},
+		AllowedHeaders:   []string{"Origin", "X-Requested-With", "Content-Type", "Authorization"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowCredentials: true,
+	})
 
 	// ----- oauth ------
-	r.Handle("/login/facebook", http.HandlerFunc(oauth.FacebookLoginHandler))
-	r.Handle("/login/facebook/callback", http.HandlerFunc(oauth.HandleFacebookCallback))
-	r.Handle("/login/google", http.HandlerFunc(oauth.GoogleLoginHandler))
+	r.Handle("/login/google", c.Handler(http.HandlerFunc(oauth.GoogleLoginHandler)))
 	r.Handle("/login/microsoft", http.HandlerFunc(oauth.MicrosoftLoginHandler))
-	r.Handle("/login/microsoft/callback", http.HandlerFunc(oauth.HandleMicrosoftCallback))
 
 	// ----- protected handlers ------
-	r.Handle("/status", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
+	r.Handle("/status", c.Handler(ValidateTokenMiddleware(http.HandlerFunc(StatusHandler))))
 	r.Handle("/refresh-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 	r.Handle("/validate-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 	r.Handle("/logout", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
 	log.Println("Init complete")
 
+	// Insert the middleware
+
 	//use the default servemux(nil)
 	err := http.ListenAndServe(":8081", handlers.LoggingHandler(os.Stdout, r))
 	fatal(err)
-
 }
 
 func getKey(token *jwt.Token) (interface{}, error) {
@@ -110,32 +104,6 @@ func getKey(token *jwt.Token) (interface{}, error) {
 	}
 
 	return nil, errors.New("unable to find key")
-}
-
-func initKeys() {
-
-	log.Println("Getting private key...")
-
-	// Read the bytes of the private key
-	signBytes, err := ioutil.ReadFile(privKeyPath)
-	fatal(err)
-
-	// get the actual key
-	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
-	fatal(err)
-
-	log.Println("Getting public key...")
-
-	// Read the bytes of the public key
-	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
-	fatal(err)
-
-	// Get the actual public key
-	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-	fatal(err)
-
-	log.Println("Keys retrieved")
-
 }
 
 func getJson(url string, target interface{}) error {
@@ -171,13 +139,13 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 // Middleware handler for methods that are protected by login
 func ValidateTokenMiddleware(next http.Handler) http.Handler {
-
 	// The top level handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Try to parse the token
 		token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
-			getKey)
-		log.Println(token)
+			func(token *jwt.Token) (interface{}, error) {
+				return authorization.VerifyKey, nil
+			})
 
 		// There should be no error if the token is parsed
 		if err == nil {
@@ -200,42 +168,42 @@ func ValidateTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-// LoginHandler is used to verify user login. And grant a user a token
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
+// // LoginHandler is used to verify user login. And grant a user a token
+// func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
-	user := User{} //initialize empty user
+// 	user := User{} //initialize empty user
 
-	//Parse json request body and use it to set fields on user
-	//Note that user is passed as a pointer variable so that it's fields can be modified
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		panic(err)
-	}
+// 	//Parse json request body and use it to set fields on user
+// 	//Note that user is passed as a pointer variable so that it's fields can be modified
+// 	err := json.NewDecoder(r.Body).Decode(&user)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	if user.Name == "palprotein" {
-		// Generate the jwt
-		token := jwt.New(jwt.SigningMethodRS256)
+// 	if user.Name == "palprotein" {
+// 		// Generate the jwt
+// 		token := jwt.New(jwt.SigningMethodRS256)
 
-		// Add the required expiration and creation time claims to the token
-		claims := make(jwt.MapClaims)
-		claims["exp"] = time.Now().Add(time.Hour).Unix()
-		claims["iat"] = time.Now().Unix()
-		claims["name"] = "ben swolo"
-		token.Claims = claims
+// 		// Add the required expiration and creation time claims to the token
+// 		claims := make(jwt.MapClaims)
+// 		claims["exp"] = time.Now().Add(time.Hour).Unix()
+// 		claims["iat"] = time.Now().Unix()
+// 		claims["name"] = "ben swolo"
+// 		token.Claims = claims
 
-		// Sign the token
-		tokenString, err := token.SignedString(signKey)
+// 		// Sign the token
+// 		tokenString, err := token.SignedString(signKey)
 
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Error while signing the token")
-			fatal(err)
-		}
+// 		if err != nil {
+// 			w.WriteHeader(http.StatusInternalServerError)
+// 			fmt.Fprintln(w, "Error while signing the token")
+// 			fatal(err)
+// 		}
 
-		// Write the token to the response
-		response := Token{tokenString}
+// 		// Write the token to the response
+// 		response := Token{tokenString}
 
-		// Send json response containing the token
-		JsonResponse(response, w)
-	}
-}
+// 		// Send json response containing the token
+// 		JsonResponse(response, w)
+// 	}
+// }
