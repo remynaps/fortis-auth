@@ -66,7 +66,7 @@ func main() {
 
 	// ----- oauth ------
 	r.Handle("/login/google", c.Handler(http.HandlerFunc(oauth.GoogleLoginHandler)))
-	r.Handle("/login/microsoft", http.HandlerFunc(oauth.MicrosoftLoginHandler))
+	r.Handle("/login/microsoft", c.Handler(http.HandlerFunc(oauth.MicrosoftLoginHandler)))
 
 	// ----- protected handlers ------
 	r.Handle("/status", c.Handler(ValidateTokenMiddleware(http.HandlerFunc(StatusHandler))))

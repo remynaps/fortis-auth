@@ -38,7 +38,7 @@ func retrieveMicrosofteKeys(token *jwt.Token) (interface{}, error) {
 func MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Try to parse the token
 	token, err := request.ParseFromRequest(r, request.AuthorizationHeaderExtractor,
-		retrieveGoogleKeys)
+		retrieveMicrosofteKeys)
 
 	// There should be no error if the token is parsed
 	if err == nil {
