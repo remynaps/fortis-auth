@@ -6,14 +6,8 @@ import (
 	"log"
 )
 
-// User is a simple displayname, id struct
-type User struct {
-	ID          string
-	DisplayName string
-}
-
-// UserExists checks if a user exists and returns a simple bool
-func UserExists(id string) bool {
+// UserExists checks if a user exists and returns a simple boolean
+func (db *DB) UserExists(id string) bool {
 	usr := new(User)
 	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName)
 	switch {
@@ -28,7 +22,7 @@ func UserExists(id string) bool {
 }
 
 // GetUserByID retrieves one user from the database with a given id
-func GetUserByID(id string) (*User, error) {
+func (db *DB) GetUserByID(id string) (*User, error) {
 	usr := new(User)
 	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName)
 	switch {
@@ -43,7 +37,7 @@ func GetUserByID(id string) (*User, error) {
 }
 
 // Search queries the database for users with the specified display name
-func Search(query string) (*[]User, error) {
+func (db *DB) Search(query string) (*[]User, error) {
 
 	var users []User
 
@@ -73,7 +67,7 @@ func Search(query string) (*[]User, error) {
 
 // InsertUser creates a new user entry in the database
 // Should only be used if a user does not exists
-func InsertUser(user *User) error {
+func (db *DB) InsertUser(user *User) error {
 
 	tx, err := db.Begin()
 	if err != nil {

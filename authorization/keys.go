@@ -16,8 +16,8 @@ var (
 // InitKeys
 func Init(path string) {
 
-	privKeyPath := path + "/app.rsa"
-	pubKeyPath := path + "/app.rsa.pub"
+	privKeyPath := path + "/jwt-privatekey"
+	pubKeyPath := path + "/jwt-publickey"
 
 	log.Println("Getting private key...")
 

@@ -1,30 +1,29 @@
 package main
 
 import (
-	"database/sql"
 	"encoding/json"
-	"errors"
+	"flag"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
-	"os"
+	"time"
 
-	"github.com/gorilla/handlers"
+	"github.com/sirupsen/logrus"
+
 	"github.com/gorilla/mux"
 	"github.com/remynaps/fortis/authorization"
-	"github.com/remynaps/fortis/oauth"
+	"github.com/remynaps/fortis/models"
+	"github.com/remynaps/gilden-guilds/correlationID"
+	"github.com/remynaps/gilden-guilds/logging"
 	"github.com/rs/cors"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
-	"github.com/lestrrat/go-jwx/jwk"
 )
 
 type Env struct {
-	db        *sql.DB
-	logger    *log.Logger
-	templates *template.Template
+	db     models.UserStore
+	logger *logrus.Logger
 }
 
 // Basic user info
@@ -42,11 +41,43 @@ type Token struct {
 	Token string `json:"token"`
 }
 
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
 const (
-	keyPath = "./config/jwt"
+	keyPath = "/etc/keys"
 )
 
+func fatal(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
+
+	// Get the console flags
+	profile := flag.String("profile", "prod", "Environment profile")
+	flag.Parse()
+
+	var logger = logrus.New()
+
+	logger.Info("Profile selected: " + *profile)
+
+	// Set the log format
+	if *profile == "dev" {
+		logger.Info("Using text log formatter..")
+		logger.Info("Setting log format profile..")
+		logger.Formatter = (&logrus.TextFormatter{
+			TimestampFormat: "01-02-2018T15:04:05.000",
+			FullTimestamp:   true,
+		})
+	} else {
+		logger.Info("Using JSON log formatter..")
+		logger.Formatter = (&logrus.JSONFormatter{})
+	}
 
 	// Get the rsa keys from the file system.
 	authorization.Init(keyPath)
@@ -64,9 +95,17 @@ func main() {
 		AllowCredentials: true,
 	})
 
+	db, err := models.InitDB("postgres://fortis:koekjeszijnlekker!@192.168.1.120/gildenguilds?sslmode=disable")
+	if err != nil {
+		// db connection failed. start the retry logic
+		logger.Error("Failed to connect to the database.")
+	}
+
+	env := &Env{db, logger}
+
 	// ----- oauth ------
-	r.Handle("/login/google", c.Handler(http.HandlerFunc(oauth.GoogleLoginHandler)))
-	r.Handle("/login/microsoft", c.Handler(http.HandlerFunc(oauth.MicrosoftLoginHandler)))
+	r.Handle("/login/google", c.Handler(http.HandlerFunc(env.GoogleLoginHandler)))
+	r.Handle("/login/microsoft", c.Handler(http.HandlerFunc(env.MicrosoftLoginHandler)))
 
 	// ----- protected handlers ------
 	r.Handle("/status", c.Handler(ValidateTokenMiddleware(http.HandlerFunc(StatusHandler))))
@@ -76,44 +115,57 @@ func main() {
 
 	log.Println("Init complete")
 
-	// Insert the middleware
-
 	//use the default servemux(nil)
-	err := http.ListenAndServe(":8081", handlers.LoggingHandler(os.Stdout, r))
+	http.ListenAndServe(":8081", RequestLogMiddleWare(logger, r))
 	fatal(err)
 }
 
-func getKey(token *jwt.Token) (interface{}, error) {
-
-	// fetch the keys and parse to a jwk
-	set, err := jwk.FetchHTTP("https://www.googleapis.com/oauth2/v3/certs")
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the key id from the header
-	// This is used to determine the key to use from the jwks
-	keyID, ok := token.Header["kid"].(string)
-	if !ok {
-		return nil, errors.New("expecting JWT header to have string kid")
-	}
-
-	// Retrieve the acutal key
-	if key := set.LookupKeyID(keyID); len(key) == 1 {
-		return key[0].Materialize()
-	}
-
-	return nil, errors.New("unable to find key")
+func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+	return &loggingResponseWriter{w, http.StatusOK}
 }
 
-func getJson(url string, target interface{}) error {
-	r, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-	defer r.Body.Close()
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
 
-	return json.NewDecoder(r.Body).Decode(target)
+// RequestLogMiddleWare - logs each incoming request
+var RequestLogMiddleWare = func(
+	logger *logrus.Logger, next http.Handler) http.HandlerFunc {
+	// one time scope setup area for middleware
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		lrw := newLoggingResponseWriter(w)
+
+		start := time.Now()
+
+		next.ServeHTTP(lrw, r)
+
+		end := time.Now()
+		latency := end.Sub(start)
+
+		requestID, typeCheck := correlationID.FromContext(r.Context())
+		if !typeCheck {
+			logger.Error("Request id of wrong type")
+		}
+
+		contextLogger := logging.Logger.WithFields(logrus.Fields{
+			"request-id":  requestID,
+			"url":         r.URL.Path,
+			"method":      r.Method,
+			"status-code": lrw.statusCode,
+			"latency":     latency,
+			"user-agent":  r.UserAgent(),
+		})
+
+		statusCode := lrw.statusCode
+
+		if statusCode == http.StatusOK {
+			contextLogger.Info("request handled")
+		} else {
+			contextLogger.Error("request failed")
+		}
+	}
 }
 
 // Json wrapper function
@@ -167,43 +219,3 @@ func ValidateTokenMiddleware(next http.Handler) http.Handler {
 		}
 	})
 }
-
-// // LoginHandler is used to verify user login. And grant a user a token
-// func LoginHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	user := User{} //initialize empty user
-
-// 	//Parse json request body and use it to set fields on user
-// 	//Note that user is passed as a pointer variable so that it's fields can be modified
-// 	err := json.NewDecoder(r.Body).Decode(&user)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	if user.Name == "palprotein" {
-// 		// Generate the jwt
-// 		token := jwt.New(jwt.SigningMethodRS256)
-
-// 		// Add the required expiration and creation time claims to the token
-// 		claims := make(jwt.MapClaims)
-// 		claims["exp"] = time.Now().Add(time.Hour).Unix()
-// 		claims["iat"] = time.Now().Unix()
-// 		claims["name"] = "ben swolo"
-// 		token.Claims = claims
-
-// 		// Sign the token
-// 		tokenString, err := token.SignedString(signKey)
-
-// 		if err != nil {
-// 			w.WriteHeader(http.StatusInternalServerError)
-// 			fmt.Fprintln(w, "Error while signing the token")
-// 			fatal(err)
-// 		}
-
-// 		// Write the token to the response
-// 		response := Token{tokenString}
-
-// 		// Send json response containing the token
-// 		JsonResponse(response, w)
-// 	}
-// }

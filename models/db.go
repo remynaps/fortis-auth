@@ -2,19 +2,30 @@ package models
 
 import (
 	"database/sql"
-	"log"
 )
 
 var db *sql.DB
 
-func InitDB(dataSourceName string) {
-	var err error
-	db, err = sql.Open("postgres", dataSourceName)
-	if err != nil {
-		log.Panic(err)
-	}
+type DB struct {
+	*sql.DB
+}
 
-	if err = db.Ping(); err != nil {
-		log.Panic(err)
+type User struct {
+	ID          string
+	DisplayName string
+}
+
+type UserStore interface {
+	UserExists(id string) bool
+	GetUserByID(id string) (*User, error)
+	Search(query string) (*[]User, error)
+	InsertUser(user *User) error
+}
+
+func InitDB(dataSourceName string) (*DB, error) {
+	db, err := sql.Open("postgres", dataSourceName)
+	if err != nil {
+		return nil, err
 	}
+	return &DB{db}, nil
 }
