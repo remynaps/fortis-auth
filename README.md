@@ -2,6 +2,8 @@
 
 ![Logo](/docs/fortis-banner-2.png "Gilden logo")
 
+[![pipeline status](https://gitlab.com/gilden/fortis/badges/master/pipeline.svg)](https://gitlab.com/gilden/fortis/commits/master)
+
 user authorization service written in go
 
 ## Getting Started
