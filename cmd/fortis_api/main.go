@@ -11,11 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
-	"github.com/remynaps/fortis/authorization"
-	"github.com/remynaps/fortis/models"
-	"github.com/remynaps/gilden-guilds/correlationID"
-	"github.com/remynaps/gilden-guilds/logging"
 	"github.com/rs/cors"
+	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/correlationID"
+	"gitlab.com/gilden/fortis/logging"
+	"gitlab.com/gilden/fortis/models"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
@@ -47,7 +47,7 @@ type loggingResponseWriter struct {
 }
 
 const (
-	keyPath = "/etc/keys"
+	keyPath = "./config/jwt"
 )
 
 func fatal(err error) {

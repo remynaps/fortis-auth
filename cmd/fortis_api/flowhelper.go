@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/remynaps/fortis/authorization"
-	"github.com/remynaps/fortis/models"
+	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/models"
 )
 
 type TokenInfo struct {
