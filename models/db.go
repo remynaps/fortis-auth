@@ -43,7 +43,6 @@ type UserStore interface {
 type ClientStore interface {
 	Clientexists(id string) bool
 	GetClientByID(id string) (*User, error)
-	Search(query string) (*[]User, error)
 	InsertClient(user *User) error
 }
 
