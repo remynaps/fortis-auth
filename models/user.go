@@ -4,12 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+
+	"github.com/satori/go.uuid"
 )
 
 // UserExists checks if a user exists and returns a simple boolean
 func (db *DB) UserExists(id string) bool {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName)
+	err := db.QueryRow("SELECT * FROM users where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.ExternalID)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
@@ -24,7 +26,7 @@ func (db *DB) UserExists(id string) bool {
 // GetUserByID retrieves one user from the database with a given id
 func (db *DB) GetUserByID(id string) (*User, error) {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName)
+	err := db.QueryRow("SELECT * FROM users where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.ExternalID)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("No user with that ID.")
@@ -74,14 +76,16 @@ func (db *DB) InsertUser(user *User) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`INSERT INTO users (ID, DisplayName)
-                     VALUES($1,$2);`)
+	internalID, err := uuid.NewV4()
+
+	stmt, err := tx.Prepare(`INSERT INTO users (ID, DisplayName, externalId)
+                     VALUES($1,$2,$3);`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(user.ID, user.DisplayName); err != nil {
+	if _, err := stmt.Exec(internalID, user.DisplayName, user.ID); err != nil {
 		tx.Rollback() // return an error too, might need it
 		return err
 	}

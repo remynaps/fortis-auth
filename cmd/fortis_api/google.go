@@ -65,7 +65,7 @@ func (env *Env) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 			// Sub is the unique google id key
 			// We will use it to query the user in our database
 			var userID = claims["sub"].(string)
-			var name = claims["name"].(string)
+			var name = "swolo"
 			var email = ""
 
 			// Only include the mail if it has been verified

@@ -95,10 +95,10 @@ func main() {
 		AllowCredentials: true,
 	})
 
-	db, err := models.InitDB("postgres://fortis:koekjeszijnlekker!@192.168.1.120/gildenguilds?sslmode=disable")
+	db, err := models.InitDB("postgres://gilden:koekjeszijnlekker!@192.168.1.120/fortis?sslmode=disable")
 	if err != nil {
 		// db connection failed. start the retry logic
-		logger.Error("Failed to connect to the database.")
+		logger.Error("Failed to connect to the database." + err.Error())
 	}
 
 	env := &Env{db, logger}

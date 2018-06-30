@@ -2,6 +2,10 @@ package models
 
 import (
 	"database/sql"
+	"time"
+
+	// postgres driver
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -13,6 +17,9 @@ type DB struct {
 type User struct {
 	ID          string
 	DisplayName string
+	ExternalID  string    `json:"externalID"`
+	Created     time.Time `json:"created"`
+	LastUpdated time.Time `json:"lastUpdated"`
 }
 
 type UserStore interface {
