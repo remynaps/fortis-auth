@@ -52,6 +52,7 @@ func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
 }
 
 func (env *Env) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+
 	// Try to parse the token
 	claims := jwt.MapClaims{}
 	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, claims,

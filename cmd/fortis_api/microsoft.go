@@ -43,7 +43,6 @@ func (env *Env) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// There should be no error if the token is parsed
 	if err == nil {
 		if token.Valid {
-			// Gather information from the token
 
 			// Sub is the unique ms id key
 			// We will use it to query the user in our database

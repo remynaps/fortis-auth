@@ -76,7 +76,7 @@ func (db *DB) InsertUser(user *User) error {
 		return err
 	}
 
-	internalID, err := uuid.NewV4()
+	internalID := uuid.NewV4()
 
 	stmt, err := tx.Prepare(`INSERT INTO users (ID, DisplayName, externalId)
                      VALUES($1,$2,$3);`)

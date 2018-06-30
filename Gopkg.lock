@@ -45,6 +45,15 @@
   revision = "569c97477ae8837e053e5a50bc739e15172b8ebe"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid"
+  ]
+  revision = "90697d60dd844d5ef6ff15135d0203f65d2f53b8"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -55,6 +64,12 @@
   packages = ["."]
   revision = "ca016a06a5753f8ba03029c0aa5e54afb1bf713f"
   version = "v1.4.0"
+
+[[projects]]
+  name = "github.com/satori/go.uuid"
+  packages = ["."]
+  revision = "f58768cc1a7a7e77a3bd49e98cdd21419399b6a3"
+  version = "v1.2.0"
 
 [[projects]]
   name = "github.com/sirupsen/logrus"
@@ -80,6 +95,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "17dd8b9759d54c2833769430ceb6168731cacc485ca977b81659d05ef69cee39"
+  inputs-digest = "a6c42320f75ef387194a380009babee1b6c322246c80b6d8cf84faac81d4371e"
   solver-name = "gps-cdcl"
   solver-version = 1
