@@ -20,7 +20,8 @@ MAINTAINER Remy Span
 
 # Add the api binary
 COPY --from=0 /go/src/gitlab.com/gilden/fortis/bin .
+COPY ./config ./config
 
 ENV PORT 6767
 EXPOSE 6767
-CMD ["./fortis"]
+CMD ["./fortis_api"]

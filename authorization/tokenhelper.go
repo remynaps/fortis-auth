@@ -5,21 +5,37 @@ import (
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"gitlab.com/gilden/fortis/models"
 )
 
-// Basic user info
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"name"`
-	Username string `json:"username"`
-}
+// CompleteFlow will log a user in or sign up if the user doesnt have an account yet.
+// It will then generate and return a signed jwt based on the user data
+func (auth *Auth) CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Token, error) {
 
-type Token struct {
-	Token string `json:"token"`
+	usr := new(models.User)
+
+	if !db.UserExists(tokenInfo.ID) {
+		// Insert a new user
+		usr.DisplayName = tokenInfo.Name
+		usr.ID = tokenInfo.ID
+		db.InsertUser(usr)
+	}
+
+	// retrieve the data to be shure
+	usr, err := db.GetUserByID(tokenInfo.ID)
+	if err != nil {
+
+	}
+
+	token := auth.CreateToken(usr)
+
+	// create the token
+	return token, nil
 }
 
 // CreateToken is used to verify user login. And grant a user a token
-func CreateToken() *Token {
+func (auth *Auth) CreateToken(usr *models.User) *Token {
+
 	// Generate the jwt
 	token := jwt.New(jwt.SigningMethodRS256)
 
@@ -27,8 +43,8 @@ func CreateToken() *Token {
 	claims := make(jwt.MapClaims)
 	claims["exp"] = time.Now().Add(time.Hour).Unix()
 	claims["iat"] = time.Now().Unix()
-	claims["name"] = "ben swolo"
-	claims["scope"] = "get_swole"
+	claims["name"] = usr.DisplayName
+	claims["uid"] = usr.ID
 	token.Claims = claims
 
 	// Sign the token

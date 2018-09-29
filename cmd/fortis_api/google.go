@@ -10,6 +10,7 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/lestrrat/go-jwx/jwk"
+	"gitlab.com/gilden/fortis/authorization"
 )
 
 func jsonResponse(response interface{}, w http.ResponseWriter) {
@@ -75,13 +76,13 @@ func (env *Env) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 				email = claims["email"].(string)
 			}
 
-			tokenData := new(TokenInfo)
+			tokenData := new(authorization.TokenInfo)
 			tokenData.ID = userID
 			tokenData.EMail = email
 			tokenData.Name = name
 
 			// login or sign up
-			token, err := CompleteFlow(tokenData, env.db)
+			token, err := env.auth.CompleteFlow(tokenData, env.db)
 
 			if err != nil {
 				// Handler error

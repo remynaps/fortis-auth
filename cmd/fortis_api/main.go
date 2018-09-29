@@ -23,6 +23,7 @@ import (
 
 type Env struct {
 	db     models.UserStore
+	auth   authorization.AuthorizationService
 	logger *logrus.Logger
 }
 
@@ -101,7 +102,14 @@ func main() {
 		logger.Error("Failed to connect to the database." + err.Error())
 	}
 
-	env := &Env{db, logger}
+	// Init services
+	auth, err := authorization.InitService()
+
+	if err != nil {
+		logger.Error("Failed to initialize the auth service." + err.Error())
+	}
+
+	env := &Env{db, auth, logger}
 
 	// ----- oauth ------
 	r.Handle("/login/google", c.Handler(http.HandlerFunc(env.GoogleLoginHandler)))
