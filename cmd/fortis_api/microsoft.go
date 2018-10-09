@@ -66,7 +66,9 @@ func (env *Env) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 			token, err := env.auth.CompleteFlow(tokenData, env.db)
 
 			if err != nil {
-				// Handler error
+				env.logger.Error("Failed to complete auth flow:" + err.Error())
+				Error(w, err, "", 500, env.logger)
+				return
 			}
 
 			jsonResponse(token, w)

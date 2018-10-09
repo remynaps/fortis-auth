@@ -3,7 +3,8 @@ package authorization
 import (
 	"crypto/rsa"
 	"io/ioutil"
-	"log"
+
+	"github.com/sirupsen/logrus"
 
 	jwt "github.com/dgrijalva/jwt-go"
 )
@@ -14,35 +15,35 @@ var (
 )
 
 // InitKeys
-func Init(path string) {
+func Init(path string, logger *logrus.Logger) {
 
 	privKeyPath := path + "/app.rsa"
 	pubKeyPath := path + "/app.rsa.pub"
 
-	log.Println("Getting private key...")
+	logger.Info("Getting private key...")
 
 	// Read the bytes of the private key
 	signBytes, err := ioutil.ReadFile(privKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	// get the actual key
 	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
-	log.Println("Getting public key...")
+	logger.Info("Getting public key...")
 
 	// Read the bytes of the public key
 	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
 	// Get the actual public key
 	VerifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(err)
 	}
-	log.Println("Keys retrieved")
+	logger.Info("Keys retrieved")
 
 }

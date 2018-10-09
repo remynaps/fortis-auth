@@ -1,6 +1,9 @@
 package authorization
 
-import "gitlab.com/gilden/fortis/models"
+import (
+	"github.com/sirupsen/logrus"
+	"gitlab.com/gilden/fortis/models"
+)
 
 // The Auth calling struct
 type Auth struct{}
@@ -28,6 +31,7 @@ type TokenInfo struct {
 }
 
 // Handle more complex init
-func InitService() (*Auth, error) {
+func InitService(keyPath string, logger *logrus.Logger) (*Auth, error) {
+	Init(keyPath, logger)
 	return &Auth{}, nil
 }

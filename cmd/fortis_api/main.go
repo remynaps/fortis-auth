@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -57,6 +58,19 @@ func fatal(err error) {
 	}
 }
 
+type ErrorData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type ErrorResponseData struct {
+	APIVersion string    `json:"apiVersion"`
+	Context    string    `json:"context,omitempty"`
+	RequestID  string    `json:"id"`
+	Method     string    `json:"method"`
+	Error      ErrorData `json:"error,omitempty"`
+}
+
 func main() {
 
 	// Get the console flags
@@ -81,12 +95,18 @@ func main() {
 	}
 
 	// Get the rsa keys from the file system.
-	authorization.Init(keyPath)
+
+	// Init services
+	auth, err := authorization.InitService(keyPath, logger)
+
+	if err != nil {
+		logger.Error("Failed to initialize the auth service." + err.Error())
+	}
 
 	// Init the http multiplexer
 	r := mux.NewRouter()
 
-	log.Println("starting server..")
+	logger.Info("starting server..")
 
 	// Set up Cors
 	c := cors.New(cors.Options{
@@ -102,13 +122,7 @@ func main() {
 		logger.Error("Failed to connect to the database." + err.Error())
 	}
 
-	// Init services
-	auth, err := authorization.InitService()
-
-	if err != nil {
-		logger.Error("Failed to initialize the auth service." + err.Error())
-	}
-
+	// Initialize the env object and
 	env := &Env{db, auth, logger}
 
 	// ----- oauth ------
@@ -121,7 +135,7 @@ func main() {
 	r.Handle("/validate-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 	r.Handle("/logout", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
-	log.Println("Init complete")
+	logger.Info("Init complete")
 
 	//use the default servemux(nil)
 	http.ListenAndServe(":8081", RequestLogMiddleWare(logger, r))
@@ -190,6 +204,27 @@ func JsonResponse(response interface{}, w http.ResponseWriter) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
+}
+
+func Error(w http.ResponseWriter, err error, requestId string, code int, logger *logrus.Logger) {
+	// Hide error from client if it is internal.
+	if code == http.StatusInternalServerError {
+		err = errors.New("An internal server error occured")
+	}
+
+	result := &ErrorResponseData{
+		APIVersion: "beta", // change this
+		Method:     "GET",  // and this
+		RequestID:  requestId,
+		Error: ErrorData{
+			Code:    code,
+			Message: err.Error(),
+		},
+	}
+
+	// Write generic error response.
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(result)
 }
 
 // Simple status handler to call to validate api

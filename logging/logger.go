@@ -5,9 +5,8 @@ import (
 	"io"
 	"net/http"
 
-	"gitlab.com/gilden/fortis/correlationID"
-
 	"github.com/sirupsen/logrus"
+	"gitlab.com/gilden/fortis/correlationID"
 )
 
 var Logger = logrus.New()
