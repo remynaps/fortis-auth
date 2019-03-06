@@ -4,12 +4,36 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"os"
 
 	"github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"gitlab.com/gilden/fortis/correlationID"
 )
 
-var Logger = logrus.New()
+var Logger *logrus.Logger
+
+func init() {
+	Logger = logrus.New()
+}
+
+// Setup configures the logger based on options in the config.json.
+func Setup(config *viper.Viper) error {
+	Logger.Formatter = &logrus.TextFormatter{DisableColors: false}
+
+	Logger.SetLevel(logrus.InfoLevel)
+	// Set up logging to a file if specified in the config
+	logFile := config.GetString("logging.file")
+	if logFile != "" {
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		mw := io.MultiWriter(os.Stderr, f)
+		Logger.Out = mw
+	}
+	return nil
+}
 
 func requestFields(r *http.Request) logrus.Fields {
 	requestID, typeCheck := correlationID.FromContext(r.Context())

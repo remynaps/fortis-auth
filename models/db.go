@@ -6,6 +6,7 @@ import (
 
 	// postgres driver
 	_ "github.com/lib/pq"
+	"github.com/spf13/viper"
 )
 
 var db *sql.DB
@@ -46,8 +47,9 @@ type ClientStore interface {
 	InsertClient(user *User) error
 }
 
-func InitDB(dataSourceName string) (*DB, error) {
-	db, err := sql.Open("postgres", dataSourceName)
+func InitDB(conf *viper.Viper) (*DB, error) {
+	connection := conf.GetString("dataSourceName")
+	db, err := sql.Open("postgres", connection)
 	if err != nil {
 		return nil, err
 	}

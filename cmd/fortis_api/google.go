@@ -52,7 +52,7 @@ func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
 	return nil, errors.New("unable to find key")
 }
 
-func (env *Env) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Try to parse the token
 	claims := jwt.MapClaims{}
@@ -82,7 +82,7 @@ func (env *Env) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 			tokenData.Name = name
 
 			// login or sign up
-			token, err := env.auth.CompleteFlow(tokenData, env.db)
+			token, err := authorization.CompleteFlow(tokenData, env.store)
 
 			if err != nil {
 				// Handler error

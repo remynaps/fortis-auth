@@ -35,7 +35,7 @@ func retrieveMicrosofteKeys(token *jwt.Token) (interface{}, error) {
 	return nil, errors.New("unable to find key")
 }
 
-func (env *Env) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (env *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Try to parse the token
 	claims := jwt.MapClaims{}
 	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor,
@@ -63,7 +63,7 @@ func (env *Env) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 			tokenData.Name = name
 
 			// login or sign up
-			token, err := env.auth.CompleteFlow(tokenData, env.db)
+			token, err := authorization.CompleteFlow(tokenData, env.store)
 
 			if err != nil {
 				env.logger.Error("Failed to complete auth flow:" + err.Error())

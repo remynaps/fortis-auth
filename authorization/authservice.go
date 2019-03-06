@@ -1,7 +1,12 @@
 package authorization
 
 import (
-	"github.com/sirupsen/logrus"
+	"crypto/rsa"
+	"io/ioutil"
+
+	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/spf13/viper"
+	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 )
 
@@ -31,7 +36,44 @@ type TokenInfo struct {
 }
 
 // Handle more complex init
-func InitService(keyPath string, logger *logrus.Logger) (*Auth, error) {
-	Init(keyPath, logger)
-	return &Auth{}, nil
+func Init(config *viper.Viper) error {
+	path := config.GetString("keys.path")
+
+	private_name := config.GetString("keys.private")
+	public_name := config.GetString("keys.public")
+
+	privKeyPath := path + private_name
+	pubKeyPath := path + public_name
+
+	logging.Info("Getting private key...")
+
+	// Read the bytes of the private key
+	signBytes, err := ioutil.ReadFile(privKeyPath)
+	if err != nil {
+		logging.Panic(err)
+	}
+	// get the actual key
+	signKey, err = jwt.ParseRSAPrivateKeyFromPEM(signBytes)
+	if err != nil {
+		logging.Panic(err)
+	}
+	logging.Info("Getting public key...")
+
+	// Read the bytes of the public key
+	verifyBytes, err := ioutil.ReadFile(pubKeyPath)
+	if err != nil {
+		logging.Panic(err)
+	}
+	// Get the actual public key
+	VerifyKey, err = jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
+	if err != nil {
+		logging.Panic(err)
+	}
+	logging.Info("Keys retrieved")
+	return err
 }
+
+var (
+	VerifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
+)

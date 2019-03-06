@@ -10,7 +10,7 @@ import (
 
 // CompleteFlow will log a user in or sign up if the user doesnt have an account yet.
 // It will then generate and return a signed jwt based on the user data
-func (auth *Auth) CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Token, error) {
+func CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Token, error) {
 
 	usr := new(models.User)
 
@@ -27,14 +27,14 @@ func (auth *Auth) CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Toke
 
 	}
 
-	token := auth.CreateToken(usr)
+	token := CreateToken(usr)
 
 	// create the token
 	return token, nil
 }
 
 // CreateToken is used to verify user login. And grant a user a token
-func (auth *Auth) CreateToken(usr *models.User) *Token {
+func CreateToken(usr *models.User) *Token {
 
 	// Generate the jwt
 	token := jwt.New(jwt.SigningMethodRS256)
