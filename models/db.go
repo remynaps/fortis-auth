@@ -23,6 +23,14 @@ type User struct {
 	LastUpdated time.Time `json:"lastUpdated"`
 }
 
+type Domain struct {
+	ID          string
+	DisplayName string
+	ExternalID  string    `json:"externalID"`
+	Created     time.Time `json:"created"`
+	LastUpdated time.Time `json:"lastUpdated"`
+}
+
 type AuthClient struct {
 	ID           string
 	DisplayName  string
@@ -41,10 +49,17 @@ type UserStore interface {
 	InsertUser(user *User) error
 }
 
+type DomainStore interface {
+	DomainExists(id string) bool
+	GetDomainByID(id string) (*Domain, error)
+	SearchDomain(query string) (*[]Domain, error)
+	InsertDomain(domain *Domain) error
+}
+
 type ClientStore interface {
 	Clientexists(id string) bool
 	GetClientByID(id string) (*User, error)
-	InsertClient(user *User) error
+	InsertClient(client *AuthClient) error
 }
 
 func InitDB(conf *viper.Viper) (*DB, error) {
