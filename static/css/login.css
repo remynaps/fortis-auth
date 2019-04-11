@@ -1,0 +1,93 @@
+.title{
+  padding-left: 40px;
+}
+.quote {
+  color: white;
+  padding: 20px;
+  position: absolute;
+  top: 50%;
+  left: 35%;
+  margin: -70px 0 0 -170px;
+}
+.background{
+  transform: scaleX(-1);
+  position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+  background-image: url("/static/image/planet.jpg");
+  background-size:     cover;                     
+  background-repeat:   no-repeat;
+  background-position: center;
+}
+.content{
+  font-family: 'Open Sans', bold;
+}
+.login-wrapper{
+  background: white;
+  color: #050066;
+  border-radius: 5px;
+  width: 300px;
+  height: 300px;
+  padding: 20px;
+  position: absolute;
+  top: 50%;
+  left: 70%;
+  margin: -170px 0 0 -170px;
+  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.login-button {
+  height: 40px;
+  width: 218px;
+  background: #fff;
+  padding: 4px 8px;
+  margin: 20px auto;
+  cursor: pointer;
+  line-height: 40px;
+}
+
+.login-button:hover {
+  transition: 0.2s;
+  background: #050066;
+  color:white;
+  /* box-shadow: 0 5px 10px rgba(0,0,0,0.10), 0 10px 10px rgba(0,0,0,0.22); */
+  transform: translate3d(0,-2px,0);
+  box-shadow: 0 10px 18px 0 rgba(0,0,0,.2);
+  transition-property: box-shadow,transform;
+  transition-duration: 600ms;
+  transition-timing-function: cubic-bezier(.16,1,.29,.99);
+}
+
+.login-button-content{
+  padding-left: 5px;
+}
+
+.login-button-text{
+  padding-left: 10px;
+  display: inline-block;
+  font-family: 'Open Sans', sans-serif;
+}
+
+.btn-microsoft {
+  height: 45px;
+  width: 215px;
+  background: #fff;
+  font: 16px/22px Roboto;
+  padding: 4px 8px;
+  margin: 30px auto;
+  cursor: pointer;
+  background: url('/static/image/microsoft-button.png');
+  background-repeat:   no-repeat;
+}
+
+@keyframes fadein {
+  from { 
+    opacity: 0; 
+    transform: translateX(-20px);
+    }
+  to   { 
+    opacity: 1; 
+    transform: translateX(0);
+  }
+}
+
+
+

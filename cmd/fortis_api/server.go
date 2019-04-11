@@ -108,6 +108,6 @@ func (ws *Server) registerRoutes() {
 	router.Handle("/logout", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
 	// Static file serving
-	router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
+	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
 	ws.server.Handler = router
 }

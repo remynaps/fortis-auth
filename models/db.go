@@ -5,6 +5,9 @@ import (
 	"time"
 
 	// postgres driver
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
 )
@@ -18,7 +21,16 @@ type DB struct {
 type User struct {
 	ID          string
 	DisplayName string
+	Email       string
+	Created     time.Time `json:"created"`
+	LastUpdated time.Time `json:"lastUpdated"`
+}
+
+type UserIdentity struct {
+	ID          string
+	UserID      string
 	ExternalID  string    `json:"externalID"`
+	Source      string    `json:"source"`
 	Created     time.Time `json:"created"`
 	LastUpdated time.Time `json:"lastUpdated"`
 }
@@ -63,8 +75,20 @@ type ClientStore interface {
 }
 
 func InitDB(conf *viper.Viper) (*DB, error) {
-	connection := conf.GetString("dataSourceName")
+
+	// Init the connection
+	connection := conf.GetString("database.data_source")
 	db, err := sql.Open("postgres", connection)
+
+	// Migrate the db
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://./migrations",
+		"postgres", driver)
+
+	// 1 step
+	m.Steps(2)
+
 	if err != nil {
 		return nil, err
 	}
