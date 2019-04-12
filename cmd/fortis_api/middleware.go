@@ -9,11 +9,25 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 	"gitlab.com/gilden/fortis/authorization"
 	"gitlab.com/gilden/fortis/correlationID"
 	"gitlab.com/gilden/fortis/logging"
 )
+
+// CorrelationIDMiddleware - generates a correlationID for the request if it was not found
+var CorrelationIDMiddleware = func(f http.HandlerFunc) http.HandlerFunc {
+	// one time scope setup area for middleware
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		corrID := uuid.NewV4()
+
+		ctx := correlationID.NewContext(r.Context(), corrID.String())
+
+		f(w, r.WithContext(ctx))
+	}
+}
 
 func ValidateTokenMiddleware(next http.Handler) http.Handler {
 	// The top level handler

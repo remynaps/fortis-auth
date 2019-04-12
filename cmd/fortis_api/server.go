@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -66,6 +67,7 @@ func NewServer(config *viper.Viper, db *models.DB) (*Server, error) {
 	hostPort := config.GetString("server.host_port")
 
 	addr := net.JoinHostPort(hostAddress, hostPort)
+
 	defaultServer := &http.Server{
 		Addr:         addr,
 		ReadTimeout:  Timeout,
@@ -97,9 +99,19 @@ func (ws *Server) registerRoutes() {
 	router := mux.NewRouter()
 	// Unauthenticated handlers for registering a new credential and logging in.
 
+	// Get the running directory.
+	runningDirectory, err := os.Getwd()
+	if err != nil {
+		// Handle the error.
+		panic(err)
+	}
+
+	// Index route
+	router.Handle("/", (http.HandlerFunc(fileHandler)))
+
 	// ----- oauth ------
-	router.Handle("/login/google", http.HandlerFunc(ws.GoogleLoginHandler))
-	router.Handle("/login/microsoft", http.HandlerFunc(ws.MicrosoftLoginHandler))
+	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))
+	router.Handle("/auth/microsoft", http.HandlerFunc(ws.MicrosoftLoginHandler))
 
 	// ----- protected handlers ------
 	router.Handle("/status", RequestLogMiddleWare(http.HandlerFunc(StatusHandler)))
@@ -108,6 +120,8 @@ func (ws *Server) registerRoutes() {
 	router.Handle("/logout", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
 	// Static file serving
-	// router.PathPrefix("/").Handler(http.FileServer(http.Dir("./static/")))
-	ws.server.Handler = router
+	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(runningDirectory+"/static"))))
+
+	ws.server.Handler = CorrelationIDMiddleware(RequestLogMiddleWare(router))
+
 }

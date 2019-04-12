@@ -11,7 +11,7 @@ import (
 // UserExists checks if a user exists and returns a simple boolean
 func (db *DB) ClientExists(id string) bool {
 	client := new(AuthClient)
-	err := db.QueryRow("SELECT * FROM clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
+	err := db.QueryRow("SELECT * FROM oauth_clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
@@ -26,7 +26,7 @@ func (db *DB) ClientExists(id string) bool {
 // GetUserByID retrieves one user from the database with a given id
 func (db *DB) GetClientByID(id string) (*AuthClient, error) {
 	client := new(AuthClient)
-	err := db.QueryRow("SELECT * FROM clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
+	err := db.QueryRow("SELECT * FROM oauth_clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("No client with that ID.")
@@ -49,7 +49,7 @@ func (db *DB) InsertClient(client *AuthClient) error {
 
 	internalID := uuid.NewV4()
 
-	stmt, err := tx.Prepare(`INSERT INTO clients (ID, DisplayName, externalId)
+	stmt, err := tx.Prepare(`INSERT INTO oauth_clients (ID, DisplayName, externalId)
                      VALUES($1,$2,$3);`)
 	if err != nil {
 		return err
