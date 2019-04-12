@@ -7,10 +7,6 @@ WORKDIR /go/src/gitlab.com/gilden/fortis/
 # Copy the project
 COPY . .
 
-# Fetch the dependencies
-RUN go get -u github.com/golang/dep/...
-RUN dep ensure
-
 # Run the build script
 RUN bash build/build.sh -linux
 

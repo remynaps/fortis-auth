@@ -38,11 +38,13 @@ func main() {
 		logging.Panic(err)
 	}
 
+	logging.Info("Connecting to database..")
 	db, err := models.InitDB(config)
 	if err != nil {
 		// db connection failed. start the retry logic
 		logging.Error("Failed to connect to the database." + err.Error())
 	}
+	logging.Info("Connected!")
 
 	// Init services
 	err = authorization.Init(config)

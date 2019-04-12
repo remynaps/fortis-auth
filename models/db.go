@@ -10,6 +10,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
+	"gitlab.com/gilden/fortis/logging"
 )
 
 var db *sql.DB
@@ -74,22 +75,25 @@ type ClientStore interface {
 	InsertClient(client *AuthClient) error
 }
 
-func InitDB(conf *viper.Viper) (*DB, error) {
+func InitDB(config *viper.Viper) (*DB, error) {
 
 	// Init the connection
-	connection := conf.GetString("database.data_source")
+	connection := config.GetString("database.data_source")
 	db, err := sql.Open("postgres", connection)
+
+	migrationsPath := config.GetString("database.migrations_path")
 
 	// Migrate the db
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://./migrations",
+		migrationsPath,
 		"postgres", driver)
 
 	// 1 step
-	m.Steps(2)
+	err = m.Steps(0)
 
 	if err != nil {
+		logging.Error(err)
 		return nil, err
 	}
 	return &DB{db}, nil
