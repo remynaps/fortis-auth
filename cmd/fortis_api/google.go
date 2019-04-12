@@ -1,17 +1,121 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/dchest/uniuri"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/dgrijalva/jwt-go/request"
 	"github.com/lestrrat/go-jwx/jwk"
 	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/logging"
+	"gitlab.com/gilden/fortis/models"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/google"
 )
+
+// -------------------------------------
+// 				Google
+// -------------------------------------
+
+type GoogleUser struct {
+	ID            string `json:"id"`
+	Email         string `json:"email"`
+	VerifiedEmail bool   `json:"verified_email"`
+	Name          string `json:"name"`
+	GivenName     string `json:"given_name"`
+	FamilyName    string `json:"family_name"`
+	Link          string `json:"link"`
+	Picture       string `json:"picture"`
+	Gender        string `json:"gender"`
+	Locale        string `json:"locale"`
+}
+
+var googleOauthConfig = &oauth2.Config{
+	RedirectURL:  "http://localhost:8081/callback/google",
+	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+	Scopes: []string{
+
+		"https://www.googleapis.com/auth/userinfo.email"},
+	Endpoint: google.Endpoint,
+}
+
+// The main google login handler
+func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+	oauthStateString := uniuri.New()
+	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+}
+
+// handle the google callback
+func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+	user, err := getGoogleUserInfo(r.FormValue("state"), r.FormValue("code"))
+	if err != nil {
+		fmt.Println(err.Error())
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
+	usr := new(models.User)
+
+	if !server.store.UserExists(user.ID) {
+		// Insert a new user
+		usr.DisplayName = user.Name
+		usr.ID = user.ID
+		server.store.InsertUser(usr)
+	}
+
+	// retrieve the data to be shure
+	usr, err = server.store.GetUserByID(user.ID)
+	if err != nil {
+		logging.Error(err)
+	}
+
+	// Let's create a session where we store the user id. We can ignore errors from the session store
+	// as it will always return a session!
+	session, _ := server.session.Get(r, sessionName)
+	session.Values["user"] = usr.ID
+
+	// Store the session in the cookie
+	if err := server.session.Save(r, w, session); err != nil {
+		Error(w, err, "", 500, server.logger)
+		return
+	}
+
+	// Redirect the user back to the consent endpoint. In a normal app, you would probably
+	// add some logic here that is triggered when the user actually performs authentication and is not
+	// part of the consent flow.
+	http.Redirect(w, r, "/consent?consent=", http.StatusFound)
+	return
+}
+
+// basic method to retrieve user info using the token
+func getGoogleUserInfo(state string, code string) (*authorization.TokenInfo, error) {
+	token, err := googleOauthConfig.Exchange(context.Background(), code)
+	if err != nil {
+		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
+	}
+	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	if err != nil {
+		return nil, fmt.Errorf("failed getting user info: %s", err.Error())
+	}
+	defer response.Body.Close()
+	contents, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed reading response body: %s", err.Error())
+	}
+	var user *authorization.TokenInfo
+	_ = json.Unmarshal(contents, &user)
+	return user, nil
+}
 
 func jsonResponse(response interface{}, w http.ResponseWriter) {
 
@@ -52,53 +156,53 @@ func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
 	return nil, errors.New("unable to find key")
 }
 
-func (env *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+// func (env *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Try to parse the token
-	claims := jwt.MapClaims{}
-	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, claims,
-		retrieveGoogleKeys)
+// 	// Try to parse the token
+// 	claims := jwt.MapClaims{}
+// 	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, claims,
+// 		retrieveGoogleKeys)
 
-	// There should be no error if the token is parsed
-	if err == nil {
-		if token.Valid {
-			// Gather information from the token
+// 	// There should be no error if the token is parsed
+// 	if err == nil {
+// 		if token.Valid {
+// 			// Gather information from the token
 
-			// Sub is the unique google id key
-			// We will use it to query the user in our database
-			var userID = claims["sub"].(string)
-			var name = claims["name"].(string)
-			var email = ""
+// 			// Sub is the unique google id key
+// 			// We will use it to query the user in our database
+// 			var userID = claims["sub"].(string)
+// 			var name = claims["name"].(string)
+// 			var email = ""
 
-			// Only include the mail if it has been verified
-			// TODO: ask the user for email if it isn't?
-			if claims["email_verified"] == true {
-				email = claims["email"].(string)
-			}
+// 			// Only include the mail if it has been verified
+// 			// TODO: ask the user for email if it isn't?
+// 			if claims["email_verified"] == true {
+// 				email = claims["email"].(string)
+// 			}
 
-			tokenData := new(authorization.TokenInfo)
-			tokenData.ID = userID
-			tokenData.EMail = email
-			tokenData.Name = name
+// 			tokenData := new(authorization.TokenInfo)
+// 			tokenData.ID = userID
+// 			tokenData.EMail = email
+// 			tokenData.Name = name
 
-			// login or sign up
-			token, err := authorization.CompleteFlow(tokenData, env.store)
+// 			// login or sign up
+// 			token, err := authorization.CompleteFlow(tokenData, env.store)
 
-			if err != nil {
-				// Handler error
-			}
+// 			if err != nil {
+// 				// Handler error
+// 			}
 
-			jsonResponse(token, w)
-		} else {
+// 			jsonResponse(token, w)
+// 		} else {
 
-			// Notify the client about the invalid token
-			w.WriteHeader(http.StatusUnauthorized)
-			fmt.Fprint(w, "Token is not valid")
-		}
-	} else {
-		log.Println(err)
-		// Client isnt authorized
-		w.WriteHeader(http.StatusUnauthorized)
-		fmt.Fprint(w, "Unauthorized access to this resource")
-	}
-}
+// 			// Notify the client about the invalid token
+// 			w.WriteHeader(http.StatusUnauthorized)
+// 			fmt.Fprint(w, "Token is not valid")
+// 		}
+// 	} else {
+// 		log.Println(err)
+// 		// Client isnt authorized
+// 		w.WriteHeader(http.StatusUnauthorized)
+// 		fmt.Fprint(w, "Unauthorized access to this resource")
+// 	}
+// }

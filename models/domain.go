@@ -11,7 +11,7 @@ import (
 // UserExists checks if a user exists and returns a simple boolean
 func (db *DB) DomainExists(id string) bool {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM domains where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.Email)
+	err := db.QueryRow("SELECT * FROM domains where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
@@ -26,7 +26,7 @@ func (db *DB) DomainExists(id string) bool {
 // GetUserByID retrieves one user from the database with a given id
 func (db *DB) GetDomain(id string) (*User, error) {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM domains where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.Email)
+	err := db.QueryRow("SELECT * FROM domains where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("No user with that ID.")

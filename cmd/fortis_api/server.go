@@ -12,13 +12,15 @@ import (
 	"gitlab.com/gilden/fortis/models"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
 )
 
 type Server struct {
-	config *viper.Viper
-	logger *logrus.Logger
-	server *http.Server
-	store  *models.DB
+	config  *viper.Viper
+	logger  *logrus.Logger
+	server  *http.Server
+	session *sessions.CookieStore
+	store   *models.DB
 }
 
 // Basic user info
@@ -75,9 +77,10 @@ func NewServer(config *viper.Viper, db *models.DB) (*Server, error) {
 	}
 
 	ws := &Server{
-		config: config,
-		server: defaultServer,
-		store:  db,
+		config:  config,
+		server:  defaultServer,
+		session: sessions.NewCookieStore([]byte("wtf")),
+		store:   db,
 	}
 	ws.registerRoutes()
 	return ws, nil
@@ -108,11 +111,14 @@ func (ws *Server) registerRoutes() {
 
 	// Index route
 	router.Handle("/", (http.HandlerFunc(fileHandler)))
-	router.Handle("/consent", (http.HandlerFunc(consentFileHandler)))
+	router.Handle("/consent", (http.HandlerFunc(ws.consentFileHandler)))
 
 	// ----- oauth ------
 	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))
 	router.Handle("/auth/microsoft", http.HandlerFunc(ws.MicrosoftLoginHandler))
+
+	router.Handle("/callback/google", http.HandlerFunc(ws.handleGoogleCallback))
+	// router.Handle("/callback/microsoft", http.HandlerFunc(ws.handleMicrosoftCallback))
 
 	// ----- protected handlers ------
 	router.Handle("/status", RequestLogMiddleWare(http.HandlerFunc(StatusHandler)))

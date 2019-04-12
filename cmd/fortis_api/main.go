@@ -20,6 +20,8 @@ func readConfig(filename string) (*viper.Viper, error) {
 	return v, err
 }
 
+const sessionName = "authentication"
+
 func main() {
 
 	logging.Info("\n" +

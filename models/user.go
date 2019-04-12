@@ -2,23 +2,21 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
 	uuid "github.com/satori/go.uuid"
+	"gitlab.com/gilden/fortis/logging"
 )
 
 // UserExists checks if a user exists and returns a simple boolean
 func (db *DB) UserExists(id string) bool {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM users where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.Email)
+	err := db.QueryRow("SELECT * FROM users where email = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
 	case err != nil:
 		log.Fatal(err)
-	default:
-		fmt.Printf("Username is %s\n", usr.DisplayName)
 	}
 	return true
 }
@@ -26,14 +24,12 @@ func (db *DB) UserExists(id string) bool {
 // GetUserByID retrieves one user from the database with a given id
 func (db *DB) GetUserByID(id string) (*User, error) {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM users where externalid = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Created, &usr.LastUpdated, &usr.Email)
+	err := db.QueryRow("SELECT * FROM users where email = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
-		log.Printf("No user with that ID.")
+		logging.Error("No user with that id")
 	case err != nil:
-		log.Fatal(err)
-	default:
-		fmt.Printf("Username is %s\n", usr.DisplayName)
+		logging.Panic(err)
 	}
 	return usr, nil
 }
@@ -78,7 +74,7 @@ func (db *DB) InsertUser(user *User) error {
 
 	internalID := uuid.NewV4()
 
-	stmt, err := tx.Prepare(`INSERT INTO users (ID, DisplayName, externalId)
+	stmt, err := tx.Prepare(`INSERT INTO users (ID, DisplayName, email)
                      VALUES($1,$2,$3);`)
 	if err != nil {
 		return err
