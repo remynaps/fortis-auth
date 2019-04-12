@@ -20,12 +20,27 @@
 .content{
   font-family: 'Open Sans', bold;
 }
+
 .login-wrapper{
   background: white;
   color: #050066;
   border-radius: 5px;
   width: 300px;
   height: 300px;
+  padding: 20px;
+  position: absolute;
+  top: 50%;
+  left: 70%;
+  margin: -170px 0 0 -170px;
+  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+}
+
+.consent-wrapper{
+  background: white;
+  color: #050066;
+  border-radius: 5px;
+  width: 300px;
+  height: 350px;
   padding: 20px;
   position: absolute;
   top: 50%;

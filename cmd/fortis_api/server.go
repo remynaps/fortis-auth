@@ -108,6 +108,7 @@ func (ws *Server) registerRoutes() {
 
 	// Index route
 	router.Handle("/", (http.HandlerFunc(fileHandler)))
+	router.Handle("/consent", (http.HandlerFunc(consentFileHandler)))
 
 	// ----- oauth ------
 	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))

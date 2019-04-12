@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" type="text/css" href="/static/css/login.css">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+
+  </head>
+  <body>
+    <div class="background"></div>
+    <div class="content">
+      <div class="quote">
+          <h2>This is where the fun begins</h2>
+          <p>Anakin</p>
+      </div>
+      <div class="consent-wrapper">
+        <h1 class="title">Consent requested</h1>
+        <h3 class="title">Do you want to allow this app to access your data?</h3>
+        <div class="login-button" onclick="location.href='/login/google'">
+          <div class="login-button-content">
+            <i class="fa fa-check"></i>
+            <div class="login-button-text">Yes</div>
+          </div>
+        </div> 
+        <div class="login-button" onclick="location.href='/login/microsoft'">
+          <div class="login-button-content">
+            <i class="fa fa-shield-alt"></i>
+            <div class="login-button-text">No</div>
+          </div>
+        </div> 
+      </div>
+    </div>
+  </body>
+</html>
