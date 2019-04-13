@@ -47,13 +47,11 @@ func ValidateTokenMiddleware(next http.Handler) http.Handler {
 			} else {
 
 				// Notify the client about the invalid token
-				w.WriteHeader(http.StatusUnauthorized)
 				fmt.Fprint(w, "Token is not valid")
 			}
 		} else {
 			log.Println(err)
 			// Client isnt authorized
-			w.WriteHeader(http.StatusUnauthorized)
 			fmt.Fprint(w, "Unauthorized access to this resource")
 		}
 	})

@@ -45,9 +45,9 @@ type AuthClient struct {
 	ID           string
 	DisplayName  string
 	ClientSecret string    `json:"clientSecret"`
-	Private      bool      `json:"private"`
 	RedirectUris []string  `json:"redirectUris"`
 	Scopes       []string  `json:"scopes"`
+	Private      bool      `json:"private"`
 	Created      time.Time `json:"created"`
 	LastUpdated  time.Time `json:"lastUpdated"`
 }
@@ -87,7 +87,7 @@ func InitDB(config *viper.Viper) (*DB, error) {
 	// 	"postgres", driver)
 
 	// // 1 step
-	// err = m.Steps(0)
+	// err = m.Steps(1)
 
 	if err != nil {
 		logging.Error(err)

@@ -73,6 +73,17 @@ func (server *Server) loggedOutFileHandler(w http.ResponseWriter, r *http.Reques
 	t.Execute(w, template) // merge.
 }
 
+func (server *Server) errorFileHandler(w http.ResponseWriter, r *http.Request) {
+
+	t := template.Must(template.New("error.html").ParseFiles("./templates/error.html")) // Create a template.
+
+	template := new(mainTemplate)
+
+	template.hero = "This is where the fun begins"
+
+	t.Execute(w, template) // merge.
+}
+
 // LogoutHandler /logout
 // currently performs a 302 redirect to Google
 func (server *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {

@@ -21,8 +21,9 @@ CREATE TABLE public.oauth_clients
 (
     client_id uuid NOT NULL PRIMARY KEY,
     client_secret text COLLATE pg_catalog."default",
-    redirect_uris text COLLATE pg_catalog."default",
-    externalid text COLLATE pg_catalog."default" NOT NULL,
+    display_name text COLLATE pg_catalog."default",
+    redirect_uris text[] COLLATE pg_catalog."default",
+    scopes text[] COLLATE pg_catalog."default",
     is_private boolean NOT NULL,
     created date NOT NULL DEFAULT ('now'::text)::date,
     lastupdated date NOT NULL DEFAULT ('now'::text)::date

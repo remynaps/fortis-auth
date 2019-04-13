@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/dchest/uniuri v0.0.0-20160212164326-8902c56451e9
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/golang-migrate/migrate v3.5.4+incompatible
 	github.com/golang-migrate/migrate/v4 v4.2.5
 	github.com/gorilla/mux v1.6.2
 	github.com/gorilla/sessions v1.1.3

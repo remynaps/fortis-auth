@@ -114,6 +114,7 @@ func (ws *Server) registerRoutes() {
 	router.Handle("/consent", (http.HandlerFunc(ws.consentFileHandler)))
 	router.Handle("/logout", http.HandlerFunc(ws.logoutHandler))
 	router.Handle("/loggedout", http.HandlerFunc(ws.loggedOutFileHandler))
+	router.Handle("/error", http.HandlerFunc(ws.errorFileHandler))
 
 	// ----- oauth ------
 	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))

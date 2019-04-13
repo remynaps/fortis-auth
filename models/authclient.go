@@ -2,44 +2,57 @@ package models
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 
+	"github.com/lib/pq"
 	uuid "github.com/satori/go.uuid"
+	"gitlab.com/gilden/fortis/logging"
 )
 
-// UserExists checks if a user exists and returns a simple boolean
+// ClientExists checks if a user exists and returns a simple boolean
 func (db *DB) ClientExists(id string) bool {
+
+	parsedId, err := uuid.FromString(id)
+
+	if err != nil {
+		logging.Error("The id does not have the correct format: " + id)
+		return false
+	}
+
 	client := new(AuthClient)
-	err := db.QueryRow("SELECT * FROM oauth_clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
+	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.DisplayName, &client.ClientSecret, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
 	case err != nil:
 		log.Fatal(err)
-	default:
-		fmt.Printf("Name is %s\n", client.DisplayName)
 	}
 	return true
 }
 
-// GetUserByID retrieves one user from the database with a given id
+// GetClientByID retrieves one user from the database with a given id
 func (db *DB) GetClientByID(id string) (*AuthClient, error) {
+
+	parsedId, err := uuid.FromString(id)
+
+	if err != nil {
+		logging.Error("The id does not have the correct format: " + id)
+		return nil, err
+	}
+
 	client := new(AuthClient)
-	err := db.QueryRow("SELECT * FROM oauth_clients where externalid = $1", id).Scan(&client.ID, &client.DisplayName, &client.Created, &client.LastUpdated, &client.ClientSecret)
+	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.DisplayName, &client.ClientSecret, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("No client with that ID.")
 	case err != nil:
 		log.Fatal(err)
-	default:
-		fmt.Printf("Name is %s\n", client.DisplayName)
 	}
 	return client, nil
 }
 
-// InsertUser creates a new user entry in the database
-// Should only be used if a user does not exists
+// InsertClient creates a new client entry in the database
+// Should only be used if a client does not exists
 func (db *DB) InsertClient(client *AuthClient) error {
 
 	tx, err := db.Begin()
@@ -47,16 +60,14 @@ func (db *DB) InsertClient(client *AuthClient) error {
 		return err
 	}
 
-	internalID := uuid.NewV4()
-
-	stmt, err := tx.Prepare(`INSERT INTO oauth_clients (ID, DisplayName, externalId)
-                     VALUES($1,$2,$3);`)
+	stmt, err := tx.Prepare(`INSERT INTO oauth_clients (client_id, displayname, client_secret, redirect_uris, scopes, is_private)
+                     VALUES($1,$2,$3,$4,$5);`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(internalID, client.DisplayName, client.ID); err != nil {
+	if _, err := stmt.Exec(client.ID, client.DisplayName, client.ClientSecret, client.RedirectUris, client.Scopes, client.Private); err != nil {
 		tx.Rollback() // return an error too, might need it
 		return err
 	}

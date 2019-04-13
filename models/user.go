@@ -10,6 +10,7 @@ import (
 
 // UserExists checks if a user exists and returns a simple boolean
 func (db *DB) UserExists(id string) bool {
+
 	usr := new(User)
 	err := db.QueryRow("SELECT * FROM users where email = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
 	switch {
