@@ -80,7 +80,7 @@ func (server *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Reque
 			// }
 
 			token, err := authorization.CompleteFlow(usr, server.store)
-			if token != nil {
+			if token != "nil" {
 
 			}
 		} else {

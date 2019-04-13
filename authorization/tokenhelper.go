@@ -1,7 +1,6 @@
 package authorization
 
 import (
-	"log"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -26,7 +25,7 @@ import (
 
 // CompleteFlow will log a user in or sign up if the user doesnt have an account yet.
 // It will then generate and return a signed jwt based on the user data
-func CompleteFlow(user *models.User, db models.UserStore) (*Token, error) {
+func CompleteFlow(user *models.User, db models.UserStore) (string, error) {
 
 	token := CreateToken(user)
 
@@ -35,7 +34,7 @@ func CompleteFlow(user *models.User, db models.UserStore) (*Token, error) {
 }
 
 // CreateToken is used to verify user login. And grant a user a token
-func CreateToken(usr *models.User) *Token {
+func CreateToken(usr *models.User) string {
 
 	// Generate the jwt
 	token := jwt.New(jwt.SigningMethodRS256)
@@ -51,15 +50,10 @@ func CreateToken(usr *models.User) *Token {
 	// Sign the token
 	tokenString, err := token.SignedString(signKey)
 
-	log.Println(tokenString)
-
 	if err != nil {
-		return nil
+		return ""
 	}
 
-	// Write the token to the response
-	response := Token{tokenString}
-
 	// Send json response containing the token
-	return &response
+	return tokenString
 }

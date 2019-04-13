@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -39,44 +38,9 @@ var googleOauthConfig = &oauth2.Config{
 func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 	logging.Debug("/auth/google called")
 
-	// Retrieve the clientID and redirect url from the request url
-	// Needs to be saved in the session to be used later on
-	clientID := r.URL.Query().Get("client_id")
-	redirect := r.URL.Query().Get("redirect_url")
-
 	session, err := server.session.Get(r, server.config.GetString("session.name"))
 	if err != nil {
 		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
-	}
-
-	if err != nil {
-		logging.Error(err)
-	}
-
-	// Client validation logic
-	if server.store.ClientExists(clientID) {
-
-		client, err := server.store.GetClientByID(clientID)
-
-		// Redirect to the error page if the client does not exist
-		if err != nil {
-			logging.Error("The client does not exist")
-			http.Redirect(w, r, "/error", http.StatusFound)
-			return
-		}
-
-		if !isValueInList(redirect, client.RedirectUris) {
-			logging.Error("The redirect uri is not registred for this client")
-			http.Redirect(w, r, "/error", http.StatusFound)
-			return
-		}
-
-		// Set the values
-		session.Values["redirect"] = redirect
-		session.Values["client_id"] = clientID
-	} else {
-		http.Redirect(w, r, "/error", http.StatusFound)
-		return
 	}
 
 	// set the state variable in the session
@@ -140,21 +104,19 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	// Finally, generate the jwt
 	token, err := authorization.CompleteFlow(usr, server.store)
 
 	if err != nil {
 
 	}
 
-	json, err := json.Marshal(token)
-	dataString := base64.StdEncoding.EncodeToString(json)
-
 	redirectUrl := session.Values["redirect"]
 
 	if redirectUrl == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	} else {
-		http.Redirect(w, r, redirectUrl.(string)+"?token="+dataString, http.StatusFound)
+		http.Redirect(w, r, redirectUrl.(string)+"?token="+token, http.StatusFound)
 	}
 	return
 }

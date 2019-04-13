@@ -110,7 +110,7 @@ func (ws *Server) registerRoutes() {
 	}
 
 	// Index route
-	router.Handle("/", (http.HandlerFunc(fileHandler)))
+	router.Handle("/", (http.HandlerFunc(ws.fileHandler)))
 	router.Handle("/consent", (http.HandlerFunc(ws.consentFileHandler)))
 	router.Handle("/logout", http.HandlerFunc(ws.logoutHandler))
 	router.Handle("/loggedout", http.HandlerFunc(ws.loggedOutFileHandler))
