@@ -58,6 +58,10 @@ func Info(args ...interface{}) {
 	Logger.Info(args...)
 }
 
+func Warning(args ...interface{}) {
+	Logger.Warning(args...)
+}
+
 func Debug(args ...interface{}) {
 	Logger.Debug(args...)
 }

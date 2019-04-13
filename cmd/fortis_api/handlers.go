@@ -8,11 +8,11 @@ import (
 )
 
 type mainTemplate struct {
-	hero string
+	Hero string
 }
 
 type consentTemplate struct {
-	hero string
+	Hero string
 }
 
 // authenticated checks if our cookie store has a user stored and returns the
@@ -35,18 +35,31 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 
 func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 
-	// Retrieve the clientID and redirect url from the request url
+	// TODO: check if user has authenticated befire. probably other middleware
+
+	// Search for the client id and redirect url in the session and url
 	// Needs to be saved in the session to be used later on
 	clientID := r.URL.Query().Get("client_id")
 	redirect := r.URL.Query().Get("redirect_url")
 
 	session, err := server.session.Get(r, server.config.GetString("session.name"))
 	if err != nil {
-		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+		logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
 	}
 
 	if err != nil {
 		logging.Error(err)
+	}
+
+	if clientID == "" {
+		logging.Error("No ClientID supplied")
+		renderError(w, "No ClientID supplied")
+		return
+	}
+	if redirect == "" {
+		logging.Error("No redirect url supplied")
+		renderError(w, "No redirect url supplied")
+		return
 	}
 
 	// Client validation logic
@@ -56,22 +69,30 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to the error page if the client does not exist
 		if err != nil {
-			logging.Error("The client does not exist")
-			http.Redirect(w, r, "/error", http.StatusFound)
+			logging.Info("The client does not exist")
+			renderError(w, "The client does not exist")
 			return
 		}
 
 		if !isValueInList(redirect, client.RedirectUris) {
 			logging.Error("The redirect uri is not registred for this client")
-			http.Redirect(w, r, "/error", http.StatusFound)
+			renderError(w, "The redirect uri is not registred for this client")
 			return
 		}
 
 		// Set the values
 		session.Values["redirect"] = redirect
 		session.Values["client_id"] = clientID
+
+		// Store the session in the cookie
+		if err := server.session.Save(r, w, session); err != nil {
+			renderError(w, "The redirect uri is not registred for this client")
+			Error(w, err, "", 500, server.logger)
+			return
+		}
+
 	} else {
-		http.Redirect(w, r, "/error", http.StatusFound)
+		renderError(w, "The client does not exist")
 		return
 	}
 
@@ -79,7 +100,7 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 	template := new(consentTemplate)
 
-	template.hero = "This is where the fun begins"
+	template.Hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
 }
@@ -98,7 +119,7 @@ func (server *Server) consentFileHandler(w http.ResponseWriter, r *http.Request)
 
 	template := new(mainTemplate)
 
-	template.hero = "This is where the fun begins"
+	template.Hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
 }
@@ -109,7 +130,7 @@ func (server *Server) loggedOutFileHandler(w http.ResponseWriter, r *http.Reques
 
 	template := new(mainTemplate)
 
-	template.hero = "This is where the fun begins"
+	template.Hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
 }
@@ -120,7 +141,7 @@ func (server *Server) errorFileHandler(w http.ResponseWriter, r *http.Request) {
 
 	template := new(mainTemplate)
 
-	template.hero = "This is where the fun begins"
+	template.Hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
 }

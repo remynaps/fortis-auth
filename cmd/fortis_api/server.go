@@ -109,16 +109,19 @@ func (ws *Server) registerRoutes() {
 		panic(err)
 	}
 
-	// Index route
-	router.Handle("/", (http.HandlerFunc(ws.fileHandler)))
-	router.Handle("/consent", (http.HandlerFunc(ws.consentFileHandler)))
+	// main route.
+	// Main handles its own client check. So no middleware
+	router.Handle("/login", (http.HandlerFunc(ws.fileHandler)))
+
+	// login logic route
+	router.Handle("/consent", ws.ValidateClientMiddleWare((http.HandlerFunc(ws.consentFileHandler))))
 	router.Handle("/logout", http.HandlerFunc(ws.logoutHandler))
 	router.Handle("/loggedout", http.HandlerFunc(ws.loggedOutFileHandler))
 	router.Handle("/error", http.HandlerFunc(ws.errorFileHandler))
 
 	// ----- oauth ------
-	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))
-	router.Handle("/auth/microsoft", http.HandlerFunc(ws.MicrosoftLoginHandler))
+	router.Handle("/auth/google", ws.ValidateClientMiddleWare(http.HandlerFunc(ws.GoogleLoginHandler)))
+	router.Handle("/auth/microsoft", ws.ValidateClientMiddleWare(http.HandlerFunc(ws.MicrosoftLoginHandler)))
 
 	router.Handle("/callback/google", http.HandlerFunc(ws.handleGoogleCallback))
 	// router.Handle("/callback/microsoft", http.HandlerFunc(ws.handleMicrosoftCallback))

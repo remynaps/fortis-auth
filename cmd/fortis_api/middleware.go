@@ -29,6 +29,86 @@ var CorrelationIDMiddleware = func(f http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (server *Server) ValidateClientMiddleWare(next http.Handler) http.Handler {
+	// The top level handler
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		// Search for the client id and redirect url in the session and url
+		// Needs to be saved in the session to be used later on
+		clientID := r.URL.Query().Get("client_id")
+		redirect := r.URL.Query().Get("redirect_url")
+
+		session, err := server.session.Get(r, server.config.GetString("session.name"))
+		if err != nil {
+			logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+		}
+
+		if err != nil {
+			logging.Error(err)
+		}
+
+		// Try to find the values in the session
+		if clientID == "" {
+			sessionClientID := session.Values["client_id"]
+			if sessionClientID != nil {
+				clientID = sessionClientID.(string)
+			}
+		}
+		if redirect == "" {
+			sessionRedirect := session.Values["redirect"]
+			if sessionRedirect != nil {
+				redirect = sessionRedirect.(string)
+			}
+		}
+
+		if clientID == "" {
+			renderError(w, "No ClientID supplied")
+			return
+		}
+		if redirect == "" {
+			renderError(w, "No redirect url supplied")
+			return
+		}
+
+		// Client validation logic
+		if server.store.ClientExists(clientID) {
+
+			client, err := server.store.GetClientByID(clientID)
+
+			// Redirect to the error page if the client does not exist
+			if err != nil {
+				logging.Error("The client does not exist")
+				renderError(w, "The client does not exist")
+				return
+			}
+
+			if !isValueInList(redirect, client.RedirectUris) {
+				logging.Error("The redirect uri is not registred for this client")
+				renderError(w, "The redirect uri is not registred for this client")
+				return
+			}
+
+			// Set the values
+			session.Values["redirect"] = redirect
+			session.Values["client_id"] = clientID
+
+			// Store the session in the cookie
+			if err := server.session.Save(r, w, session); err != nil {
+				renderError(w, "The redirect uri is not registred for this client")
+				Error(w, err, "", 500, server.logger)
+				return
+			}
+
+			// Everything went OK! allow the request
+			next.ServeHTTP(w, r)
+
+		} else {
+			renderError(w, "The client does not exist")
+			return
+		}
+	})
+}
+
 func ValidateTokenMiddleware(next http.Handler) http.Handler {
 	// The top level handler
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
