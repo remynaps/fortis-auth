@@ -26,24 +26,9 @@ import (
 
 // CompleteFlow will log a user in or sign up if the user doesnt have an account yet.
 // It will then generate and return a signed jwt based on the user data
-func CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Token, error) {
+func CompleteFlow(user *models.User, db models.UserStore) (*Token, error) {
 
-	usr := new(models.User)
-
-	if !db.UserExists(tokenInfo.ID) {
-		// Insert a new user
-		usr.DisplayName = tokenInfo.Name
-		usr.ID = tokenInfo.ID
-		db.InsertUser(usr)
-	}
-
-	// retrieve the data to be shure
-	usr, err := db.GetUserByID(tokenInfo.ID)
-	if err != nil {
-
-	}
-
-	token := CreateToken(usr)
+	token := CreateToken(user)
 
 	// create the token
 	return token, nil

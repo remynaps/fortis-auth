@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -139,12 +140,21 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	token, err := authorization.CompleteFlow(usr, server.store)
+
+	if err != nil {
+
+	}
+
+	json, err := json.Marshal(token)
+	dataString := base64.StdEncoding.EncodeToString(json)
+
 	redirectUrl := session.Values["redirect"]
 
 	if redirectUrl == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	} else {
-		http.Redirect(w, r, redirectUrl.(string), http.StatusFound)
+		http.Redirect(w, r, redirectUrl.(string)+"?token="+dataString, http.StatusFound)
 	}
 	return
 }

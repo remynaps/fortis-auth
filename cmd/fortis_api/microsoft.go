@@ -10,6 +10,7 @@ import (
 	"github.com/dgrijalva/jwt-go/request"
 	"github.com/lestrrat/go-jwx/jwk"
 	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/logging"
 )
 
 // RetrieveGoogleKeys Retieves the google public keys from the google api
@@ -35,7 +36,7 @@ func retrieveMicrosofteKeys(token *jwt.Token) (interface{}, error) {
 	return nil, errors.New("unable to find key")
 }
 
-func (env *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Try to parse the token
 	claims := jwt.MapClaims{}
 	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor,
@@ -62,16 +63,26 @@ func (env *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request)
 			tokenData.EMail = email
 			tokenData.Name = name
 
-			// login or sign up
-			token, err := authorization.CompleteFlow(tokenData, env.store)
-
+			// retrieve the data to be shure
+			usr, err := server.store.GetUserByID(userID)
 			if err != nil {
-				env.logger.Error("Failed to complete auth flow:" + err.Error())
-				Error(w, err, "", 500, env.logger)
-				return
+				logging.Error(err)
 			}
 
-			jsonResponse(token, w)
+			// Let's create a session where we store the user id. We can ignore errors from the session store
+			// as it will always return a session!
+			// session.Values["user"] = usr.ID
+
+			// Store the session in the cookie
+			// if err := server.session.Save(r, w, session); err != nil {
+			// 	Error(w, err, "", 500, server.logger)
+			// 	return
+			// }
+
+			token, err := authorization.CompleteFlow(usr, server.store)
+			if token != nil {
+
+			}
 		} else {
 
 			// Notify the client about the invalid token
