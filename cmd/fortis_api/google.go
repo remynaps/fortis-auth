@@ -25,19 +25,6 @@ import (
 // 				Google
 // -------------------------------------
 
-type GoogleUser struct {
-	ID            string `json:"id"`
-	Email         string `json:"email"`
-	VerifiedEmail bool   `json:"verified_email"`
-	Name          string `json:"name"`
-	GivenName     string `json:"given_name"`
-	FamilyName    string `json:"family_name"`
-	Link          string `json:"link"`
-	Picture       string `json:"picture"`
-	Gender        string `json:"gender"`
-	Locale        string `json:"locale"`
-}
-
 var googleOauthConfig = &oauth2.Config{
 	RedirectURL:  "http://localhost:8081/callback/google",
 	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -48,7 +35,7 @@ var googleOauthConfig = &oauth2.Config{
 	Endpoint: google.Endpoint,
 }
 
-// The main google login handler
+// GoogleLoginHandler is called when the user presses the login with google button
 func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
 	oauthStateString := uniuri.New()
 	url := googleOauthConfig.AuthCodeURL(oauthStateString)
@@ -93,7 +80,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	// Redirect the user back to the consent endpoint. In a normal app, you would probably
 	// add some logic here that is triggered when the user actually performs authentication and is not
 	// part of the consent flow.
-	http.Redirect(w, r, "/consent?consent=", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusFound)
 	return
 }
 
@@ -155,54 +142,3 @@ func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
 
 	return nil, errors.New("unable to find key")
 }
-
-// func (env *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
-
-// 	// Try to parse the token
-// 	claims := jwt.MapClaims{}
-// 	token, err := request.ParseFromRequestWithClaims(r, request.AuthorizationHeaderExtractor, claims,
-// 		retrieveGoogleKeys)
-
-// 	// There should be no error if the token is parsed
-// 	if err == nil {
-// 		if token.Valid {
-// 			// Gather information from the token
-
-// 			// Sub is the unique google id key
-// 			// We will use it to query the user in our database
-// 			var userID = claims["sub"].(string)
-// 			var name = claims["name"].(string)
-// 			var email = ""
-
-// 			// Only include the mail if it has been verified
-// 			// TODO: ask the user for email if it isn't?
-// 			if claims["email_verified"] == true {
-// 				email = claims["email"].(string)
-// 			}
-
-// 			tokenData := new(authorization.TokenInfo)
-// 			tokenData.ID = userID
-// 			tokenData.EMail = email
-// 			tokenData.Name = name
-
-// 			// login or sign up
-// 			token, err := authorization.CompleteFlow(tokenData, env.store)
-
-// 			if err != nil {
-// 				// Handler error
-// 			}
-
-// 			jsonResponse(token, w)
-// 		} else {
-
-// 			// Notify the client about the invalid token
-// 			w.WriteHeader(http.StatusUnauthorized)
-// 			fmt.Fprint(w, "Token is not valid")
-// 		}
-// 	} else {
-// 		log.Println(err)
-// 		// Client isnt authorized
-// 		w.WriteHeader(http.StatusUnauthorized)
-// 		fmt.Fprint(w, "Unauthorized access to this resource")
-// 	}
-// }

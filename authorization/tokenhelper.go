@@ -8,6 +8,22 @@ import (
 	"gitlab.com/gilden/fortis/models"
 )
 
+// Use this code to create a token
+
+// 			tokenData := new(authorization.TokenInfo)
+// 			tokenData.ID = userID
+// 			tokenData.EMail = email
+// 			tokenData.Name = name
+
+// 			// login or sign up
+// 			token, err := authorization.CompleteFlow(tokenData, env.store)
+
+// 			if err != nil {
+// 				// Handler error
+// 			}
+
+// 			jsonResponse(token, w)
+
 // CompleteFlow will log a user in or sign up if the user doesnt have an account yet.
 // It will then generate and return a signed jwt based on the user data
 func CompleteFlow(tokenInfo *TokenInfo, db models.UserStore) (*Token, error) {

@@ -89,7 +89,7 @@ var RequestLogMiddleWare = func(next http.Handler) http.HandlerFunc {
 
 		statusCode := lrw.statusCode
 
-		if statusCode == http.StatusOK {
+		if statusCode == http.StatusOK || statusCode == http.StatusTemporaryRedirect || statusCode == http.StatusFound {
 			contextLogger.Info("request handled")
 		} else {
 			contextLogger.Error("request failed")
