@@ -3,6 +3,8 @@ package main
 import (
 	"html/template"
 	"net/http"
+
+	"gitlab.com/gilden/fortis/logging"
 )
 
 type mainTemplate struct {
@@ -58,4 +60,37 @@ func (server *Server) consentFileHandler(w http.ResponseWriter, r *http.Request)
 	template.hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
+}
+
+func (server *Server) loggedOutFileHandler(w http.ResponseWriter, r *http.Request) {
+
+	t := template.Must(template.New("logout.html").ParseFiles("./templates/logout.html")) // Create a template.
+
+	template := new(mainTemplate)
+
+	template.hero = "This is where the fun begins"
+
+	t.Execute(w, template) // merge.
+}
+
+// LogoutHandler /logout
+// currently performs a 302 redirect to Google
+func (server *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	logging.Debug("/logout")
+
+	logging.Debug("saving session")
+	server.session.MaxAge(-1)
+	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	if err != nil {
+		logging.Error(err)
+	}
+	session.Save(r, w)
+	server.session.MaxAge(300)
+
+	var requestedURL = r.URL.Query().Get("url")
+	if requestedURL != "" {
+		http.Redirect(w, r, requestedURL, http.StatusFound)
+	} else {
+		http.Redirect(w, r, "/loggedout", http.StatusFound)
+	}
 }

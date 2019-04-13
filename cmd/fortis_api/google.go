@@ -11,7 +11,6 @@ import (
 	"os"
 
 	"github.com/dchest/uniuri"
-
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/lestrrat/go-jwx/jwk"
 	"gitlab.com/gilden/fortis/authorization"
@@ -37,13 +36,46 @@ var googleOauthConfig = &oauth2.Config{
 
 // GoogleLoginHandler is called when the user presses the login with google button
 func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+	logging.Debug("/auth/google called")
+
+	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	if err != nil {
+		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+	}
+
+	if err != nil {
+		logging.Error(err)
+	}
+
+	// set the state variable in the session
 	oauthStateString := uniuri.New()
+	session.Values["state"] = oauthStateString
+	logging.Debug("session state set to %s", session.Values["state"])
+
+	// Store the session in the cookie
+	if err := server.session.Save(r, w, session); err != nil {
+		Error(w, err, "", 500, server.logger)
+		return
+	}
+
 	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
 // handle the google callback
 func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+
+	session, _ := server.session.Get(r, server.config.GetString("session.name"))
+
+	// is the nonce "state" valid?
+	queryState := r.URL.Query().Get("state")
+	if session.Values["state"] != queryState {
+		logging.Error("Invalid session state: stored %s, returned %s", session.Values["state"], queryState)
+		http.Redirect(w, r, "/error", http.StatusUnauthorized)
+		return
+	}
+
 	user, err := getGoogleUserInfo(r.FormValue("state"), r.FormValue("code"))
 	if err != nil {
 		fmt.Println(err.Error())
@@ -68,7 +100,6 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 
 	// Let's create a session where we store the user id. We can ignore errors from the session store
 	// as it will always return a session!
-	session, _ := server.session.Get(r, sessionName)
 	session.Values["user"] = usr.ID
 
 	// Store the session in the cookie

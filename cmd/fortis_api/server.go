@@ -112,6 +112,8 @@ func (ws *Server) registerRoutes() {
 	// Index route
 	router.Handle("/", (http.HandlerFunc(fileHandler)))
 	router.Handle("/consent", (http.HandlerFunc(ws.consentFileHandler)))
+	router.Handle("/logout", http.HandlerFunc(ws.logoutHandler))
+	router.Handle("/loggedout", http.HandlerFunc(ws.loggedOutFileHandler))
 
 	// ----- oauth ------
 	router.Handle("/auth/google", http.HandlerFunc(ws.GoogleLoginHandler))
@@ -124,7 +126,6 @@ func (ws *Server) registerRoutes() {
 	router.Handle("/status", RequestLogMiddleWare(http.HandlerFunc(StatusHandler)))
 	router.Handle("/refresh-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 	router.Handle("/validate-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
-	router.Handle("/logout", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
 	// Static file serving
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(runningDirectory+"/static"))))
