@@ -8,17 +8,19 @@ fi
 
 # small script that interated over the cmd folder
 
-# database package
-cd models
-go build
+# go mod download
 
-cd ../ # root project path
+# # database package
+# cd models
+# go build
 
-# authorization package
-cd authorization
-go build
+# cd ../ # root project path
 
-cd ../ # root project path
+# # authorization package
+# cd authorization
+# go build
+
+# cd ../ # root project path
 
 # find the binaries in the cmd folder
 for CMD in `ls cmd`; do

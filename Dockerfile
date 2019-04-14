@@ -2,7 +2,13 @@
 # Multi stage build.
 # First Create a build image and build the entire application here
 FROM golang:latest
-WORKDIR /go/src/gitlab.com/gilden/fortis/
+
+RUN mkdir /fortis
+WORKDIR /fortis
+
+COPY ./go.mod ./go.sum ./
+
+RUN go mod download
 
 # Copy the project
 COPY . .
@@ -15,7 +21,7 @@ FROM google/debian:wheezy
 MAINTAINER Remy Span
 
 # Add the api binary
-COPY --from=0 /go/src/gitlab.com/gilden/fortis/bin .
+COPY --from=0 /fortis/bin .
 
 ENV PORT 6767
 EXPOSE 6767
