@@ -19,4 +19,4 @@ COPY --from=0 /go/src/gitlab.com/gilden/fortis/bin .
 
 ENV PORT 6767
 EXPOSE 6767
-CMD ["./fortis"]
+CMD ["./bin/fortis_api"]

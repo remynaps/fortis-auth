@@ -6,6 +6,8 @@ import (
 
 	// postgres driver
 
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"github.com/spf13/viper"
@@ -78,16 +80,16 @@ func InitDB(config *viper.Viper) (*DB, error) {
 	connection := config.GetString("database.data_source")
 	db, err := sql.Open("postgres", connection)
 
-	// migrationsPath := config.GetString("database.migrations_path")
+	migrationsPath := config.GetString("database.migrations_path")
 
-	// // Migrate the db
-	// driver, err := postgres.WithInstance(db, &postgres.Config{})
-	// m, err := migrate.NewWithDatabaseInstance(
-	// 	migrationsPath,
-	// 	"postgres", driver)
+	// Migrate the db
+	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	m, err := migrate.NewWithDatabaseInstance(
+		migrationsPath,
+		"postgres", driver)
 
-	// // 1 step
-	// err = m.Steps(1)
+	// 1 step
+	m.Up()
 
 	if err != nil {
 		logging.Error(err)
