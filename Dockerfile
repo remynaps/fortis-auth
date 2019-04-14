@@ -25,4 +25,4 @@ COPY --from=0 /fortis/bin .
 
 ENV PORT 6767
 EXPOSE 6767
-CMD ["./bin/fortis_api"]
+CMD ["./fortis_api"]
