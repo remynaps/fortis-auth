@@ -189,10 +189,22 @@ type Handler func(http.ResponseWriter, *http.Request) *RequestError
 // ServeHTTP implements the http.Handler interface. If an appHandler returns an
 // error, the error is inspected and an appropriate response is written out.
 func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+
+	requestID, typeCheck := correlationID.FromContext(r.Context())
+	if !typeCheck {
+		logging.Error("Request id of wrong type")
+	}
+
 	defer func() {
 		if r := recover(); r != nil {
-			log.Printf("%v", r)
-			http.Error(w, "A serious error has occured.", 500)
+
+			// Construct a logger to show the request id.
+			// TODO: use single logger for all situations
+			criticalLogger := logging.Logger.WithFields(logrus.Fields{
+				"request-id": requestID,
+			})
+			criticalLogger.Error(r)
+			renderError(w, "A serious error has occured.", 500)
 			// if Debug {
 			// 	panic(r.(error))
 			// }
@@ -200,11 +212,6 @@ func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 
 	if e := fn(w, r); e != nil {
-
-		requestID, typeCheck := correlationID.FromContext(r.Context())
-		if !typeCheck {
-			logging.Error("Request id of wrong type")
-		}
 
 		contextLogger := logging.Logger.WithFields(logrus.Fields{
 			"request-id":  requestID,

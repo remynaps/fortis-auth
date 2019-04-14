@@ -121,10 +121,10 @@ func (ws *Server) registerRoutes() {
 
 	// ----- oauth ------
 	router.Handle("/auth/google", ws.ValidateClientMiddleWare(Handler(ws.GoogleLoginHandler)))
-	router.Handle("/auth/microsoft", ws.ValidateClientMiddleWare(http.HandlerFunc(ws.MicrosoftLoginHandler)))
+	router.Handle("/auth/microsoft", ws.ValidateClientMiddleWare(Handler(ws.MicrosoftLoginHandler)))
 
 	router.Handle("/callback/google", Handler(ws.handleGoogleCallback))
-	// router.Handle("/callback/microsoft", http.HandlerFunc(ws.handleMicrosoftCallback))
+	router.Handle("/callback/microsoft", Handler(ws.handleMicrosoftCallback))
 
 	// ----- protected handlers ------
 	router.Handle("/status", RequestLogMiddleWare(http.HandlerFunc(StatusHandler)))
