@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 
@@ -35,7 +34,7 @@ var googleOauthConfig = &oauth2.Config{
 }
 
 // GoogleLoginHandler is called when the user presses the login with google button
-func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) *RequestError {
 	logging.Debug("/auth/google called")
 
 	session, err := server.session.Get(r, server.config.GetString("session.name"))
@@ -50,17 +49,18 @@ func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request)
 
 	// Store the session in the cookie
 	if err := server.session.Save(r, w, session); err != nil {
-		Error(w, err, "", 500, server.logger)
-		return
+		return &RequestError{err, 500, "Can't display record"}
 	}
 
 	url := googleOauthConfig.AuthCodeURL(oauthStateString)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+
+	return nil
 }
 
 // handle the google callback
-func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) {
+func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) *RequestError {
 
 	session, _ := server.session.Get(r, server.config.GetString("session.name"))
 
@@ -68,15 +68,14 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	queryState := r.URL.Query().Get("state")
 	if session.Values["state"] != queryState {
 		logging.Error("Invalid session state: stored %s, returned %s", session.Values["state"], queryState)
-		http.Redirect(w, r, "/error", http.StatusUnauthorized)
-		return
+		return &RequestError{errors.New("Invalid session state"), 405, "Can't display record"}
 	}
 
 	user, err := getGoogleUserInfo(r.FormValue("state"), r.FormValue("code"))
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Redirect(w, r, "/", http.StatusFound)
-		return
+		return &RequestError{err, 405, "Code exchange failed"}
 	}
 
 	usr := new(models.User)
@@ -91,7 +90,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	// retrieve the data to be shure
 	usr, err = server.store.GetUserByID(user.ID)
 	if err != nil {
-		logging.Error(err)
+		return &RequestError{err, 500, "Failed to retrieve user"}
 	}
 
 	// Let's create a session where we store the user id. We can ignore errors from the session store
@@ -101,14 +100,14 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	// Store the session in the cookie
 	if err := server.session.Save(r, w, session); err != nil {
 		Error(w, err, "", 500, server.logger)
-		return
+		return &RequestError{err, 500, "Failed to save cookie"}
 	}
 
 	// Finally, generate the jwt
 	token, err := authorization.CompleteFlow(usr, server.store)
 
 	if err != nil {
-
+		return &RequestError{err, 500, "Failed to create token"}
 	}
 
 	redirectUrl := session.Values["redirect"]
@@ -118,7 +117,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	} else {
 		http.Redirect(w, r, redirectUrl.(string)+"?token="+token, http.StatusFound)
 	}
-	return
+	return nil
 }
 
 // basic method to retrieve user info using the token
@@ -139,22 +138,6 @@ func getGoogleUserInfo(state string, code string) (*authorization.TokenInfo, err
 	var user *authorization.TokenInfo
 	_ = json.Unmarshal(contents, &user)
 	return user, nil
-}
-
-func jsonResponse(response interface{}, w http.ResponseWriter) {
-
-	// Create a json object from the given interface type
-	json, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Json created, write success
-	w.WriteHeader(http.StatusOK)
-	log.Println(response)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(json)
 }
 
 // RetrieveGoogleKeys Retieves the google public keys from the google api

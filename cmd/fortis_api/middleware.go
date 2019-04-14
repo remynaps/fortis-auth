@@ -29,9 +29,9 @@ var CorrelationIDMiddleware = func(f http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (server *Server) ValidateClientMiddleWare(next http.Handler) http.Handler {
+func (server *Server) ValidateClientMiddleWare(next http.Handler) Handler {
 	// The top level handler
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return Handler(func(w http.ResponseWriter, r *http.Request) *RequestError {
 
 		// Search for the client id and redirect url in the session and url
 		// Needs to be saved in the session to be used later on
@@ -62,12 +62,10 @@ func (server *Server) ValidateClientMiddleWare(next http.Handler) http.Handler {
 		}
 
 		if clientID == "" {
-			renderError(w, "No ClientID supplied")
-			return
+			return &RequestError{err, 405, "No clientId supplied"}
 		}
 		if redirect == "" {
-			renderError(w, "No redirect url supplied")
-			return
+			return &RequestError{err, 405, "No redirect url supplied"}
 		}
 
 		// Client validation logic
@@ -77,15 +75,11 @@ func (server *Server) ValidateClientMiddleWare(next http.Handler) http.Handler {
 
 			// Redirect to the error page if the client does not exist
 			if err != nil {
-				logging.Error("The client does not exist")
-				renderError(w, "The client does not exist")
-				return
+				return &RequestError{err, 405, "The client does not exist"}
 			}
 
 			if !isValueInList(redirect, client.RedirectUris) {
-				logging.Error("The redirect uri is not registred for this client")
-				renderError(w, "The redirect uri is not registred for this client")
-				return
+				return &RequestError{err, 405, "The redirect uri is not registred for this client"}
 			}
 
 			// Set the values
@@ -94,18 +88,19 @@ func (server *Server) ValidateClientMiddleWare(next http.Handler) http.Handler {
 
 			// Store the session in the cookie
 			if err := server.session.Save(r, w, session); err != nil {
-				renderError(w, "The redirect uri is not registred for this client")
-				Error(w, err, "", 500, server.logger)
-				return
+				return &RequestError{err, 500, "Failed to save session"}
+
 			}
 
 			// Everything went OK! allow the request
 			next.ServeHTTP(w, r)
 
 		} else {
-			renderError(w, "The client does not exist")
-			return
+			return &RequestError{err, 405, "The client does not exist"}
+
 		}
+
+		return nil
 	})
 }
 
@@ -171,6 +166,64 @@ var RequestLogMiddleWare = func(next http.Handler) http.HandlerFunc {
 			contextLogger.Info("request handled")
 		} else {
 			contextLogger.Error("request failed")
+		}
+	}
+}
+
+// Error is the expected return of a dae.Handler, or nil otherwise.
+type RequestError struct {
+	Error   error
+	Code    int
+	Message string
+}
+
+// NewError is a helper for creating an Error pointer.
+func NewError(err error, code int, msg string) *RequestError {
+	return &RequestError{err, code, msg}
+}
+
+// Handler is used to cast functions to its type to implement ServeHTTP.
+// Code that panics is automatically recovered and delivers a server 500 error.
+type Handler func(http.ResponseWriter, *http.Request) *RequestError
+
+// ServeHTTP implements the http.Handler interface. If an appHandler returns an
+// error, the error is inspected and an appropriate response is written out.
+func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("%v", r)
+			http.Error(w, "A serious error has occured.", 500)
+			// if Debug {
+			// 	panic(r.(error))
+			// }
+		}
+	}()
+
+	if e := fn(w, r); e != nil {
+
+		requestID, typeCheck := correlationID.FromContext(r.Context())
+		if !typeCheck {
+			logging.Error("Request id of wrong type")
+		}
+
+		contextLogger := logging.Logger.WithFields(logrus.Fields{
+			"request-id":  requestID,
+			"url":         r.URL.Path,
+			"method":      r.Method,
+			"status-code": e.Code,
+			"user-agent":  r.UserAgent(),
+		})
+
+		contextLogger.Error(fmt.Sprintf("Code: %v, Message: \"%s\", Error: %v", e.Code, e.Message, e.Error))
+		switch e.Code {
+		case 500:
+			renderError(w, e.Message, e.Code)
+		case 404:
+			renderError(w, e.Message, e.Code)
+		case 405:
+			renderError(w, e.Message, e.Code)
+		case 200:
+			fmt.Fprint(w, e.Message)
 		}
 	}
 }

@@ -14,12 +14,14 @@ func isValueInList(value string, list []string) bool {
 	return false
 }
 
-func renderError(w http.ResponseWriter, errorText string) {
+func renderError(w http.ResponseWriter, errorText string, statusCode int) {
 	t := template.Must(template.New("error.html").ParseFiles("./templates/error.html")) // Create a template.
 
 	template := mainTemplate{}
 
 	template.Hero = errorText
+
+	w.WriteHeader(statusCode)
 
 	t.Execute(w, template) // merge.
 }

@@ -33,7 +33,7 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("API is up and running"))
 }
 
-func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
+func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *RequestError {
 
 	// TODO: check if user has authenticated befire. probably other middleware
 
@@ -52,14 +52,10 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if clientID == "" {
-		logging.Error("No ClientID supplied")
-		renderError(w, "No ClientID supplied")
-		return
+		return &RequestError{err, 405, "No ClientID supplied"}
 	}
 	if redirect == "" {
-		logging.Error("No redirect url supplied")
-		renderError(w, "No redirect url supplied")
-		return
+		return &RequestError{err, 405, "No redirect url supplied"}
 	}
 
 	// Client validation logic
@@ -69,15 +65,11 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Redirect to the error page if the client does not exist
 		if err != nil {
-			logging.Info("The client does not exist")
-			renderError(w, "The client does not exist")
-			return
+			return &RequestError{err, 405, "The client does not exist"}
 		}
 
 		if !isValueInList(redirect, client.RedirectUris) {
-			logging.Error("The redirect uri is not registred for this client")
-			renderError(w, "The redirect uri is not registred for this client")
-			return
+			return &RequestError{err, 405, "The redirect uri is not registred for this client"}
 		}
 
 		// Set the values
@@ -86,14 +78,11 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Store the session in the cookie
 		if err := server.session.Save(r, w, session); err != nil {
-			renderError(w, "The redirect uri is not registred for this client")
-			Error(w, err, "", 500, server.logger)
-			return
+			return &RequestError{err, 500, "Failed to save session"}
 		}
 
 	} else {
-		renderError(w, "The client does not exist")
-		return
+		return &RequestError{err, 405, "The client does not exist"}
 	}
 
 	t := template.Must(template.New("login.html").ParseFiles("./templates/login.html")) // Create a template.
@@ -103,6 +92,8 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) {
 	template.Hero = "This is where the fun begins"
 
 	t.Execute(w, template) // merge.
+
+	return nil
 }
 
 func (server *Server) consentFileHandler(w http.ResponseWriter, r *http.Request) {
