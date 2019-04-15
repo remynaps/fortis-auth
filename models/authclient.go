@@ -60,14 +60,14 @@ func (db *DB) InsertClient(client *AuthClient) error {
 		return err
 	}
 
-	stmt, err := tx.Prepare(`INSERT INTO oauth_clients (client_id, displayname, client_secret, redirect_uris, scopes, is_private)
-                     VALUES($1,$2,$3,$4,$5);`)
+	stmt, err := tx.Prepare(`INSERT INTO oauth_clients (client_id, display_name, client_secret, redirect_uris, scopes, is_private)
+                     VALUES($1,$2,$3,$4,$5,$6);`)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
-	if _, err := stmt.Exec(client.ID, client.DisplayName, client.ClientSecret, client.RedirectUris, client.Scopes, client.Private); err != nil {
+	if _, err := stmt.Exec(client.ID, client.DisplayName, client.ClientSecret, pq.Array(client.RedirectUris), pq.Array(client.Scopes), client.Private); err != nil {
 		tx.Rollback() // return an error too, might need it
 		return err
 	}
