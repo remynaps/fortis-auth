@@ -18,7 +18,7 @@ type consentTemplate struct {
 	Hero string
 }
 
-func (server *Server) ExchangeCode(w http.ResponseWriter, r *http.Request) {
+func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// 0. User needs to be logged in! inspect session!!!
 	// 1. parse data from url (client_id, client_secret, code, redirect_url)

@@ -113,25 +113,28 @@ func (ws *Server) registerRoutes() {
 	// Main handles its own client check. So no middleware
 	router.Handle("/login", Handler(ws.fileHandler))
 
-	// login logic route
+	// login logic routes
 	router.Handle("/consent", ws.ValidateClientMiddleWare((http.HandlerFunc(ws.consentFileHandler))))
 	router.Handle("/logout", http.HandlerFunc(ws.logoutHandler))
 	router.Handle("/loggedout", http.HandlerFunc(ws.loggedOutFileHandler))
 	router.Handle("/error", http.HandlerFunc(ws.errorFileHandler))
 
-	// ----- oauth ------
-	router.Handle("/auth/google", ws.ValidateClientMiddleWare(Handler(ws.GoogleLoginHandler)))
-	router.Handle("/auth/microsoft", ws.ValidateClientMiddleWare(Handler(ws.MicrosoftLoginHandler)))
-	router.Handle("/oauth/token", ws.ValidateClientMiddleWare(Handler(ws.MicrosoftLoginHandler)))
+	// ----- social login ------
+	router.Handle("/login/google", ws.ValidateClientMiddleWare(Handler(ws.GoogleLoginHandler)))
+	router.Handle("/login/microsoft", ws.ValidateClientMiddleWare(Handler(ws.MicrosoftLoginHandler)))
 
 	// ----- oauth callbacks ------
 	router.Handle("/callback/google", Handler(ws.handleGoogleCallback))
 	router.Handle("/callback/microsoft", Handler(ws.handleMicrosoftCallback))
 
+	// ----- oauth ------
+	// These endpoints return Json instead of rendering a page
+	router.Handle("/oauth/token", ws.ValidateClientMiddleWare(http.HandlerFunc(ws.exchangeCode)))
+	router.Handle("/oauth/token/validate", ws.ValidateClientMiddleWare(http.HandlerFunc(ws.exchangeCode)))
+
 	// ----- protected handlers ------
 	router.Handle("/status", RequestLogMiddleWare(http.HandlerFunc(StatusHandler)))
 	router.Handle("/refresh-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
-	router.Handle("/validate-token", ValidateTokenMiddleware(http.HandlerFunc(StatusHandler)))
 
 	// Static file serving
 	router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", http.FileServer(http.Dir(runningDirectory+"/static"))))
