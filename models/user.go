@@ -25,7 +25,7 @@ func (db *DB) UserExists(id string) bool {
 // GetUserByID retrieves one user from the database with a given id
 func (db *DB) GetUserByID(id string) (*User, error) {
 	usr := new(User)
-	err := db.QueryRow("SELECT * FROM users where email = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
+	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		logging.Error("No user with that id")

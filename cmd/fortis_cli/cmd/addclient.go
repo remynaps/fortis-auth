@@ -46,7 +46,7 @@ var addclientCmd = &cobra.Command{
 			panic(err)
 		}
 
-		hashedSecret, err := bcrypt.GenerateFromPassword([]byte(array), bcrypt.DefaultCost)
+		hashedSecret, err := bcrypt.GenerateFromPassword(array, bcrypt.DefaultCost)
 
 		if err != nil {
 			panic(err)
@@ -55,7 +55,7 @@ var addclientCmd = &cobra.Command{
 		client := models.AuthClient{
 			ID:           clientID,
 			DisplayName:  name, // retrieve value from viper
-			ClientSecret: fmt.Sprintf("%X", hashedSecret),
+			ClientSecret: string(hashedSecret),
 			RedirectUris: []string{redirect},
 			Scopes:       []string{"All"},
 			Private:      true,

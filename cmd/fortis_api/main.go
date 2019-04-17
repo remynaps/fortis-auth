@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/spf13/viper"
 	"gitlab.com/gilden/fortis/authorization"
@@ -60,12 +59,3 @@ func main() {
 	}
 	server.Start()
 }
-
-func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
-	return &loggingResponseWriter{w, http.StatusOK}
-}
-
-// func (lrw *loggingResponseWriter) WriteHeader(code int) {
-// 	lrw.statusCode = code
-// 	lrw.ResponseWriter.WriteHeader(code)
-// }

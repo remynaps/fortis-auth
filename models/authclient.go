@@ -20,7 +20,7 @@ func (db *DB) ClientExists(id string) bool {
 	}
 
 	client := new(AuthClient)
-	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.DisplayName, &client.ClientSecret, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
+	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.ClientSecret, &client.DisplayName, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		return false
@@ -41,7 +41,7 @@ func (db *DB) GetClientByID(id string) (*AuthClient, error) {
 	}
 
 	client := new(AuthClient)
-	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.DisplayName, &client.ClientSecret, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
+	err = db.QueryRow("SELECT * FROM oauth_clients where client_id = $1", parsedId).Scan(&client.ID, &client.ClientSecret, &client.DisplayName, pq.Array(&client.RedirectUris), pq.Array(&client.Scopes), &client.Private, &client.Created, &client.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		log.Printf("No client with that ID.")

@@ -132,6 +132,10 @@ func ValidateTokenMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+func newLoggingResponseWriter(w http.ResponseWriter) *loggingResponseWriter {
+	return &loggingResponseWriter{w, http.StatusOK}
+}
+
 // RequestLogMiddleWare - logs each incoming request
 var RequestLogMiddleWare = func(next http.Handler) http.HandlerFunc {
 	// one time scope setup area for middleware
@@ -170,7 +174,7 @@ var RequestLogMiddleWare = func(next http.Handler) http.HandlerFunc {
 	}
 }
 
-// Error is the expected return of a dae.Handler, or nil otherwise.
+// RequestError is the expected return of a server.Handler, or nil otherwise.
 type RequestError struct {
 	Error   error
 	Code    int

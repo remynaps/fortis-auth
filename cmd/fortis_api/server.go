@@ -111,6 +111,7 @@ func (ws *Server) registerRoutes() {
 
 	// main route.
 	// Main handles its own client check. So no middleware
+	router.Handle("/", Handler(ws.fileHandler)) // TODO: redirect to login with default client id
 	router.Handle("/login", Handler(ws.fileHandler))
 
 	// login logic routes

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"errors"
 	"html/template"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"gitlab.com/gilden/fortis/authorization"
 	"gitlab.com/gilden/fortis/correlationID"
 	"gitlab.com/gilden/fortis/logging"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type mainTemplate struct {
@@ -48,6 +50,7 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	code := r.URL.Query().Get("code")
 	redirect := r.URL.Query().Get("redirect_url")
 
+	// TODO: seperate checks
 	if clientID == "" {
 		Error(w, errors.New("No clientID supplied"), requestID, 400, logging.Logger)
 	}
@@ -78,10 +81,24 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		session, _ := server.session.Get(r, server.config.GetString("session.name"))
 
 		// Check if the supplied redirect url equals the url supplied in the first call
-		existingRedirect := session.Values["redirect_url"].(string)
+		existingRedirect := session.Values["redirect"].(string)
 
 		if existingRedirect != redirect {
 			Error(w, errors.New("Invalid redirect url"), requestID, 400, logging.Logger)
+		}
+
+		decodedSecret, err := base64.URLEncoding.DecodeString(clientSecret)
+
+		if err != nil {
+			Error(w, errors.New("The client secret does not have the correct format"), requestID, 400, logging.Logger)
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(client.ClientSecret), decodedSecret)
+		if err != nil {
+			logging.Error(err)
+			Error(w, errors.New("Invalid client secret supplied"), requestID, 400, logging.Logger)
+			return
 		}
 
 		// At this point we assume the user is authenticated
@@ -96,20 +113,22 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 		// Finally, generate the jwt
 		token, err := authorization.CompleteFlow(usr, server.store)
 
-		jsonToken := authorization.Token{
+		jsonToken := Token{
 			Token: token,
 		}
 
 		if err != nil {
-			JsonResponse(jsonToken, w)
+			Error(w, err, requestID, 500, logging.Logger)
 		}
+
+		JsonResponse(jsonToken, w)
 	}
 }
 
 // authenticated checks if our cookie store has a user stored and returns the
 // user's name, or an empty string if the user is not yet authenticated.
 func (server *Server) authenticated(r *http.Request) string {
-	session, _ := server.session.Get(r, sessionName)
+	session, _ := server.session.Get(r, server.config.GetString("session.name"))
 	if u, ok := session.Values["user"]; !ok {
 		return ""
 	} else if user, ok := u.(string); !ok {
