@@ -16,6 +16,7 @@ package cmd
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 
 	uuid "github.com/satori/go.uuid"
@@ -39,12 +40,11 @@ var addclientCmd = &cobra.Command{
 
 		clientID := uuid.NewV4().String()
 
-		length := 24 // 55 chars
+		length := 55 // 55 chars
 		array := make([]byte, length)
 		if _, err := rand.Read(array); err != nil {
 			panic(err)
 		}
-		unhashedSecret := fmt.Sprintf("%X", array)
 
 		hashedSecret, err := bcrypt.GenerateFromPassword([]byte(array), bcrypt.DefaultCost)
 
@@ -67,7 +67,7 @@ var addclientCmd = &cobra.Command{
 		} else {
 			fmt.Println("Created client: " + client.DisplayName)
 			fmt.Println("Client ID: " + client.ID)
-			fmt.Println("Client secret : " + unhashedSecret)
+			fmt.Println("Client secret : " + base64.URLEncoding.EncodeToString(array))
 			fmt.Println("Store the secret securerly. You will have to generate a new one you lose the secret!")
 		}
 	},
@@ -83,13 +83,4 @@ func init() {
 	addclientCmd.MarkFlagRequired("name")
 	addclientCmd.MarkFlagRequired("redirect")
 	addclientCmd.MarkFlagRequired("private")
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// addclientCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// addclientCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

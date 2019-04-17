@@ -1,9 +1,12 @@
 package main
 
 import (
+	"errors"
 	"html/template"
 	"net/http"
 
+	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/correlationID"
 	"gitlab.com/gilden/fortis/logging"
 )
 
@@ -13,6 +16,94 @@ type mainTemplate struct {
 
 type consentTemplate struct {
 	Hero string
+}
+
+func (server *Server) ExchangeCode(w http.ResponseWriter, r *http.Request) {
+
+	// 0. User needs to be logged in! inspect session!!!
+	// 1. parse data from url (client_id, client_secret, code, redirect_url)
+	// 2. Try to find client using url data
+	// 2a. validate code
+	// 3. if found and valid, retrieve user info.
+	// 4. Generate token if everything checks out
+
+	requestID, typeCheck := correlationID.FromContext(r.Context())
+	if !typeCheck {
+		logging.Error("Request id of wrong type")
+	}
+
+	// This helper checks if the user is already authenticated. If not, we
+	// redirect them to the login endpoint.
+	user := server.authenticated(r)
+	if user == "" {
+
+		// Error response
+		Error(w, errors.New("Unauthorized"), requestID, 405, logging.Logger)
+		return
+	}
+
+	// 1. Retieve required info from url
+	clientID := r.URL.Query().Get("client_id")
+	clientSecret := r.URL.Query().Get("client_secret")
+	code := r.URL.Query().Get("code")
+	redirect := r.URL.Query().Get("redirect_url")
+
+	if clientID == "" {
+		Error(w, errors.New("No clientID supplied"), requestID, 400, logging.Logger)
+	}
+	if clientSecret == "" {
+		Error(w, errors.New("No clientSecret supplied"), requestID, 400, logging.Logger)
+	}
+	if code == "" {
+		Error(w, errors.New("No auth code supplied"), requestID, 400, logging.Logger)
+	}
+	if redirect == "" {
+		Error(w, errors.New("No redirect url supplied"), requestID, 400, logging.Logger)
+	}
+
+	// Client validation logic
+	if server.store.ClientExists(clientID) {
+
+		client, err := server.store.GetClientByID(clientID)
+
+		// Redirect to the error page if the client does not exist
+		if err != nil {
+			Error(w, errors.New("Failed to retrieve the client"), requestID, 500, logging.Logger)
+		}
+
+		if !isValueInList(redirect, client.RedirectUris) {
+			Error(w, errors.New("Invalid redirect url"), requestID, 400, logging.Logger)
+		}
+
+		session, _ := server.session.Get(r, server.config.GetString("session.name"))
+
+		// Check if the supplied redirect url equals the url supplied in the first call
+		existingRedirect := session.Values["redirect_url"].(string)
+
+		if existingRedirect != redirect {
+			Error(w, errors.New("Invalid redirect url"), requestID, 400, logging.Logger)
+		}
+
+		// At this point we assume the user is authenticated
+		userID := session.Values["user"].(string)
+
+		// retrieve the data to be shure
+		usr, err := server.store.GetUserByID(userID)
+		if err != nil {
+			Error(w, err, requestID, 500, logging.Logger)
+		}
+
+		// Finally, generate the jwt
+		token, err := authorization.CompleteFlow(usr, server.store)
+
+		jsonToken := authorization.Token{
+			Token: token,
+		}
+
+		if err != nil {
+			JsonResponse(jsonToken, w)
+		}
+	}
 }
 
 // authenticated checks if our cookie store has a user stored and returns the
