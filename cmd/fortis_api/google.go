@@ -88,7 +88,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// retrieve the data to be shure
-	usr, err = server.store.GetUserByID(user.ID)
+	usr, err = server.store.GetUserByExternalID(user.ID)
 	if err != nil {
 		return &RequestError{err, 500, "Failed to retrieve user"}
 	}

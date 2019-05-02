@@ -1,39 +1,41 @@
 .title{
-  padding-left: 40px;
+  text-align: center;
+  font-weight: 400;
 }
 .quote {
-  color: white;
+  color: #050066;
   padding: 20px;
-  position: absolute;
-  top: 50%;
-  left: 35%;
-  margin: -70px 0 0 -170px;
+  text-align: center;
 }
 .background{
   transform: scaleX(-1);
   z-index: 0;
+  background: #0069ff;
   position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-  background-image: url("/static/image/planet.jpg");
+  /* background-image: url("/static/image/planet.jpg"); */
   background-size:     cover;                     
   background-repeat:   no-repeat;
   background-position: center;
 }
 .content{
   font-family: 'Open Sans', bold;
+  position: absolute;
+  width: 400px;
+  height: 500px;
+	top:0;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	margin: auto;
 }
 
 .login-wrapper{
+  padding: 40px;
   background: white;
   color: #050066;
   border-radius: 5px;
-  width: 300px;
-  height: 300px;
-  padding: 20px;
-  position: absolute;
-  top: 50%;
-  left: 70%;
-  margin: -170px 0 0 -170px;
-  box-shadow: 0 14px 28px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22);
+  
+  /* box-shadow: 0 8px 14px rgba(0,0,0,0.25), 0 10px 10px rgba(0,0,0,0.22); */
 }
 
 .consent-wrapper{
@@ -52,12 +54,25 @@
 
 .login-button {
   height: 40px;
-  width: 218px;
+  width: 40px;
+  border-radius: 50px;
+  display: inline-block;
   background: #fff;
-  padding: 4px 8px;
-  margin: 20px auto;
+  margin: 20px 20px;
   cursor: pointer;
   line-height: 40px;
+  text-align: center;
+}
+
+.alt-signin-text{
+  text-align: center;
+  color: dimgrey;
+  font-size: 14px;
+  left: 50%;
+}
+
+.social-wrapper{
+  text-align: center;
 }
 
 .login-button:hover {
@@ -73,11 +88,10 @@
 }
 
 .login-button-content{
-  padding-left: 5px;
+  text-align: center;
 }
 
 .login-button-text{
-  padding-left: 10px;
   display: inline-block;
   font-family: 'Open Sans', sans-serif;
 }
@@ -105,5 +119,73 @@
   }
 }
 
+/* Full-width inputs */
+input[type=text], input[type=password] {
+  font-size: 14px;
+  border: 2px grey;
+  width: 100%;
+  height: 50px;
+  padding: 12px 20px;
+  display: inline-block;
+  box-sizing: border-box;
+  margin: 10px auto;
+  background: rgb(245, 245, 245);
+  border-radius: 2px;
+}
 
+/* Set a style for all buttons */
+button {
+  background-color: #15CD72;
+  font-family: 'Open Sans', sans-serif;
+  border-radius: 2px;
+  font-weight: 500;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  font-size: 14px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* Add a hover effect for buttons */
+button:hover {
+  opacity: 0.8;
+}
+
+/* Extra style for the cancel button (red) */
+.cancelbtn {
+  width: auto;
+  padding: 10px 18px;
+  background-color: #f44336;
+}
+
+/* Center the avatar image inside this container */
+.imgcontainer {
+  text-align: center;
+  margin: 24px 0 12px 0;
+}
+
+/* Avatar image */
+img.avatar {
+  width: 40%;
+  border-radius: 50%;
+}
+
+/* The "Forgot password" text */
+span.psw {
+  float: right;
+  padding-top: 16px;
+}
+
+/* Change styles for span and cancel button on extra small screens */
+@media screen and (max-width: 300px) {
+  span.psw {
+    display: block;
+    float: none;
+  }
+  .cancelbtn {
+    width: 100%;
+  }
+}
 

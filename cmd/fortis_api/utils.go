@@ -1,8 +1,11 @@
 package main
 
 import (
-	"html/template"
+	"log"
 	"net/http"
+	"net/url"
+
+	"gitlab.com/gilden/fortis/logging"
 )
 
 func isValueInList(value string, list []string) bool {
@@ -14,14 +17,20 @@ func isValueInList(value string, list []string) bool {
 	return false
 }
 
-func renderError(w http.ResponseWriter, errorText string, statusCode int) {
-	t := template.Must(template.New("error.html").ParseFiles("./templates/error.html")) // Create a template.
+func renderError(w http.ResponseWriter, r *http.Request, errorText string, errorDescription string, errorHint string) {
 
-	template := mainTemplate{}
+	relativeURL := "/error"
+	u, err := url.Parse(relativeURL)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	template.Hero = errorText
+	queryString := u.Query()
+	queryString.Set("Error", errorText)
+	queryString.Set("Error_description", errorDescription)
+	queryString.Set("Error_hint", "")
+	u.RawQuery = queryString.Encode()
+	logging.Info(u.String())
 
-	w.WriteHeader(statusCode)
-
-	t.Execute(w, template) // merge.
+	http.Redirect(w, r, u.String(), http.StatusFound)
 }

@@ -10,8 +10,10 @@
     <div id="main">
             <div class="fof">
                     <img class="error-gif" src="https://media.giphy.com/media/l4Ki2obCyAQS5WhFe/giphy.gif" alt="Loading" title="Loading" />
-                    <h1>Hmmm</h1>
-                    <h3>{{ .Hero }}</h3>
+                    <h1>What did you do?</h1>
+                    <h3>Error: {{ .Error }}</h3>
+                    <p>Message: {{ .ErrorMessage }}</p>
+                    <p>{{ .ErrorHint }}</p>
             </div>
     </div>
     <div class="background"></div>

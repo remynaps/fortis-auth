@@ -5,7 +5,7 @@ import (
 	"log"
 
 	uuid "github.com/satori/go.uuid"
-	"gitlab.com/gilden/fortis/logging"
+	"gitlab.com/remynaps/fortis-hydra/logging"
 )
 
 // UserExists checks if a user exists and returns a simple boolean
@@ -26,6 +26,19 @@ func (db *DB) UserExists(id string) bool {
 func (db *DB) GetUserByID(id string) (*User, error) {
 	usr := new(User)
 	err := db.QueryRow("SELECT * FROM users where id = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
+	switch {
+	case err == sql.ErrNoRows:
+		logging.Error("No user with that id")
+	case err != nil:
+		logging.Panic(err)
+	}
+	return usr, nil
+}
+
+// GetUserByID retrieves one user from the database with a given id
+func (db *DB) GetUserByExternalID(id string) (*User, error) {
+	usr := new(User)
+	err := db.QueryRow("SELECT * FROM users where email = $1", id).Scan(&usr.ID, &usr.DisplayName, &usr.Email, &usr.Created, &usr.LastUpdated)
 	switch {
 	case err == sql.ErrNoRows:
 		logging.Error("No user with that id")

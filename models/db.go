@@ -57,6 +57,7 @@ type AuthClient struct {
 type UserStore interface {
 	UserExists(id string) bool
 	GetUserByID(id string) (*User, error)
+	GetUserByExternalID(id string) (*User, error)
 	Search(query string) (*[]User, error)
 	InsertUser(user *User) error
 }

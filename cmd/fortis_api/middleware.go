@@ -192,9 +192,9 @@ type Handler func(http.ResponseWriter, *http.Request) *RequestError
 
 // ServeHTTP implements the http.Handler interface. If an appHandler returns an
 // error, the error is inspected and an appropriate response is written out.
-func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (fn Handler) ServeHTTP(w http.ResponseWriter, request *http.Request) {
 
-	requestID, typeCheck := correlationID.FromContext(r.Context())
+	requestID, typeCheck := correlationID.FromContext(request.Context())
 	if !typeCheck {
 		logging.Error("Request id of wrong type")
 	}
@@ -208,31 +208,31 @@ func (fn Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				"request-id": requestID,
 			})
 			criticalLogger.Error(r)
-			renderError(w, "A serious error has occured.", 500)
+			renderError(w, request, "internal_error", "An internal server error has occured", "")
 			// if Debug {
 			// 	panic(r.(error))
 			// }
 		}
 	}()
 
-	if e := fn(w, r); e != nil {
+	if e := fn(w, request); e != nil {
 
 		contextLogger := logging.Logger.WithFields(logrus.Fields{
 			"request-id":  requestID,
-			"url":         r.URL.Path,
-			"method":      r.Method,
+			"url":         request.URL.Path,
+			"method":      request.Method,
 			"status-code": e.Code,
-			"user-agent":  r.UserAgent(),
+			"user-agent":  request.UserAgent(),
 		})
 
 		contextLogger.Error(fmt.Sprintf("Code: %v, Message: \"%s\", Error: %v", e.Code, e.Message, e.Error))
 		switch e.Code {
 		case 500:
-			renderError(w, e.Message, e.Code)
+			renderError(w, request, "internal_error", "An internal server error has occured", "")
 		case 404:
-			renderError(w, e.Message, e.Code)
+			renderError(w, request, "not_found", "The page could not be found", "")
 		case 405:
-			renderError(w, e.Message, e.Code)
+			renderError(w, request, "invalid_grant", e.Message, "")
 		case 200:
 			fmt.Fprint(w, e.Message)
 		}

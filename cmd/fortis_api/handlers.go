@@ -16,6 +16,12 @@ type mainTemplate struct {
 	Hero string
 }
 
+type errorTemplate struct {
+	Error        string
+	ErrorMessage string
+	ErrorHint    string
+}
+
 type consentTemplate struct {
 	Hero string
 }
@@ -238,11 +244,17 @@ func (server *Server) loggedOutFileHandler(w http.ResponseWriter, r *http.Reques
 
 func (server *Server) errorFileHandler(w http.ResponseWriter, r *http.Request) {
 
+	error := r.URL.Query().Get("Error")
+	errorMessage := r.URL.Query().Get("Error_description")
+	errorHint := r.URL.Query().Get("Error_hint")
+
 	t := template.Must(template.New("error.html").ParseFiles("./templates/error.html")) // Create a template.
 
-	template := new(mainTemplate)
+	template := new(errorTemplate)
 
-	template.Hero = "This is where the fun begins"
+	template.Error = error
+	template.ErrorMessage = errorMessage
+	template.ErrorHint = errorHint
 
 	t.Execute(w, template) // merge.
 }
