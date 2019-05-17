@@ -1,7 +1,6 @@
-package main
+package server
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,27 +15,20 @@ import (
 	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
-// -------------------------------------
-// 				Google
-// -------------------------------------
-
-var googleOauthConfig = &oauth2.Config{
-	RedirectURL:  "http://localhost:8081/callback/google",
-	ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-	ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-	Scopes: []string{
-
-		"https://www.googleapis.com/auth/userinfo.email"},
-	Endpoint: google.Endpoint,
+var microsoftOauthConfig = &oauth2.Config{
+	RedirectURL:  "http://localhost:8081/callback/microsoft",
+	ClientSecret: os.Getenv("MICROSOFT_CLIENT_SECRET"),
+	Scopes:       []string{"user.read"},
+	Endpoint: oauth2.Endpoint{
+		AuthURL:  "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+		TokenURL: "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+	},
 }
 
-// GoogleLoginHandler is called when the user presses the login with google button
-func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) *RequestError {
-	logging.Debug("/auth/google called")
-
+// the main login handler for microsoft oauth
+func (server *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) *RequestError {
 	session, err := server.session.Get(r, server.config.GetString("session.name"))
 	if err != nil {
 		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
@@ -52,16 +44,15 @@ func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request)
 		return &RequestError{err, 500, "Can't display record"}
 	}
 
-	url := googleOauthConfig.AuthCodeURL(oauthStateString)
+	url := microsoftOauthConfig.AuthCodeURL(oauthStateString)
 
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 
 	return nil
 }
 
-// handle the google callback
-func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) *RequestError {
-
+// handle the microsoft callback
+func (server *Server) handleMicrosoftCallback(w http.ResponseWriter, r *http.Request) *RequestError {
 	session, _ := server.session.Get(r, server.config.GetString("session.name"))
 
 	// is the nonce "state" valid?
@@ -71,7 +62,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 		return &RequestError{errors.New("Invalid session state"), 405, "Can't display record"}
 	}
 
-	user, err := getGoogleUserInfo(r.FormValue("state"), r.FormValue("code"))
+	user, err := getMicrosoftUserInfo(r.FormValue("state"), r.FormValue("code"))
 	if err != nil {
 		fmt.Println(err.Error())
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -88,7 +79,7 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	}
 
 	// retrieve the data to be shure
-	usr, err = server.store.GetUserByExternalID(user.ID)
+	usr, err = server.store.GetUserByID(user.ID)
 	if err != nil {
 		return &RequestError{err, 500, "Failed to retrieve user"}
 	}
@@ -120,13 +111,13 @@ func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Reques
 	return nil
 }
 
-// basic method to retrieve user info using the token
-func getGoogleUserInfo(state string, code string) (*authorization.TokenInfo, error) {
-	token, err := googleOauthConfig.Exchange(context.Background(), code)
+// get basic user info from microsoft
+func getMicrosoftUserInfo(state string, code string) (*authorization.TokenInfo, error) {
+	token, err := microsoftOauthConfig.Exchange(oauth2.NoContext, code)
 	if err != nil {
 		return nil, fmt.Errorf("code exchange failed: %s", err.Error())
 	}
-	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
+	response, err := http.Get("https://login.microsoftonline.com/common/v2.0/openid/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed getting user info: %s", err.Error())
 	}
@@ -141,9 +132,9 @@ func getGoogleUserInfo(state string, code string) (*authorization.TokenInfo, err
 }
 
 // RetrieveGoogleKeys Retieves the google public keys from the google api
-func retrieveGoogleKeys(token *jwt.Token) (interface{}, error) {
+func retrieveMicrosofteKeys(token *jwt.Token) (interface{}, error) {
 	// fetch the keys and parse to a jwk
-	set, err := jwk.FetchHTTP("https://www.googleapis.com/oauth2/v3/certs")
+	set, err := jwk.FetchHTTP("https://login.microsoftonline.com/common/discovery/v2.0/keys")
 	if err != nil {
 		return nil, err
 	}

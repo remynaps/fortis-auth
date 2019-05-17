@@ -1,4 +1,4 @@
-package main
+package server
 
 // Json wrapper function
 import (

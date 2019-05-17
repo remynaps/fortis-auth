@@ -5,6 +5,7 @@ import (
 
 	"github.com/spf13/viper"
 	"gitlab.com/gilden/fortis/authorization"
+	"gitlab.com/gilden/fortis/cmd/fortis_api/server"
 	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 )
@@ -53,7 +54,7 @@ func main() {
 		logging.Panic(err)
 	}
 
-	server, err := NewServer(config, db)
+	server, err := server.NewServer(config, db)
 	if err != nil {
 		log.Fatal(err)
 	}

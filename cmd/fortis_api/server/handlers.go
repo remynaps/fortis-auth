@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"encoding/base64"
@@ -55,19 +55,28 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 	clientSecret := r.URL.Query().Get("client_secret")
 	code := r.URL.Query().Get("code")
 	redirect := r.URL.Query().Get("redirect_url")
+	state := r.URL.Query().Get("state")
 
 	// TODO: seperate checks
 	if clientID == "" {
-		Error(w, errors.New("No clientID supplied"), requestID, 400, logging.Logger)
+		Error(w, errors.New("No clientID supplied"), requestID, 405, logging.Logger)
+		return
 	}
 	if clientSecret == "" {
-		Error(w, errors.New("No clientSecret supplied"), requestID, 400, logging.Logger)
+		Error(w, errors.New("No clientSecret supplied"), requestID, 405, logging.Logger)
+		return
 	}
 	if code == "" {
-		Error(w, errors.New("No auth code supplied"), requestID, 400, logging.Logger)
+		Error(w, errors.New("No auth code supplied"), requestID, 405, logging.Logger)
+		return
 	}
 	if redirect == "" {
-		Error(w, errors.New("No redirect url supplied"), requestID, 400, logging.Logger)
+		Error(w, errors.New("No redirect url supplied"), requestID, 405, logging.Logger)
+		return
+	}
+	if state == "" {
+		Error(w, errors.New("No state supplied"), requestID, 405, logging.Logger)
+		return
 	}
 
 	// Client validation logic
@@ -88,18 +97,17 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 		// Check if the supplied redirect url equals the url supplied in the first call
 		existingRedirect := session.Values["redirect"].(string)
-
 		if existingRedirect != redirect {
 			Error(w, errors.New("Invalid redirect url"), requestID, 400, logging.Logger)
 		}
 
 		decodedSecret, err := base64.URLEncoding.DecodeString(clientSecret)
-
 		if err != nil {
 			Error(w, errors.New("The client secret does not have the correct format"), requestID, 400, logging.Logger)
 			return
 		}
 
+		// Compare the secret with the stored one
 		err = bcrypt.CompareHashAndPassword([]byte(client.ClientSecret), decodedSecret)
 		if err != nil {
 			logging.Error(err)
@@ -157,6 +165,7 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *Reque
 	// Needs to be saved in the session to be used later on
 	clientID := r.URL.Query().Get("client_id")
 	redirect := r.URL.Query().Get("redirect_url")
+	state := r.URL.Query().Get("state")
 
 	session, err := server.session.Get(r, server.config.GetString("session.name"))
 	if err != nil {
@@ -172,6 +181,9 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *Reque
 	}
 	if redirect == "" {
 		return &RequestError{err, 405, "No redirect url supplied"}
+	}
+	if state == "" {
+		return &RequestError{err, 405, "No state supplied"}
 	}
 
 	// Client validation logic
@@ -191,6 +203,7 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *Reque
 		// Set the values
 		session.Values["redirect"] = redirect
 		session.Values["client_id"] = clientID
+		session.Values["state"] = clientID
 
 		// Store the session in the cookie
 		if err := server.session.Save(r, w, session); err != nil {

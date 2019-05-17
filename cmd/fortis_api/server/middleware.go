@@ -1,4 +1,4 @@
-package main
+package server
 
 // Middleware handler for methods that are protected by login
 import (
