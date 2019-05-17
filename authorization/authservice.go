@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/spf13/viper"
+	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 )
@@ -36,11 +36,11 @@ type TokenInfo struct {
 }
 
 // Handle more complex init
-func Init(config *viper.Viper) error {
-	path := config.GetString("keys.path")
+func Init(config *configuration.Config) error {
+	path := config.Keys.KeyPath
 
-	private_name := config.GetString("keys.private")
-	public_name := config.GetString("keys.public")
+	private_name := config.Keys.PrivateKey
+	public_name := config.Keys.PublicKey
 
 	privKeyPath := path + private_name
 	pubKeyPath := path + public_name

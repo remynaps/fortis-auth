@@ -132,40 +132,6 @@ performance:
     variables:
       - $PERFORMANCE_DISABLED
 
-# sast:
-#   stage: test
-#   image: docker:stable
-#   variables:
-#     DOCKER_DRIVER: overlay2
-#   allow_failure: true
-#   services:
-#     - docker:stable-dind
-#   script:
-#     - setup_docker
-#     - sast
-#   artifacts:
-#     paths: [gl-sast-report.json]
-#   except:
-#     variables:
-#       - $SAST_DISABLED
-
-# dependency_scanning:
-#   stage: test
-#   image: docker:stable
-#   variables:
-#     DOCKER_DRIVER: overlay2
-#   allow_failure: true
-#   services:
-#     - docker:stable-dind
-#   script:
-#     - setup_docker
-#     - dependency_scanning
-#   artifacts:
-#     paths: [gl-dependency-scanning-report.json]
-#   except:
-#     variables:
-#       - $DEPENDENCY_SCANNING_DISABLED
-
 container_scanning:
   stage: test
   image: docker:stable

@@ -3,22 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/spf13/viper"
 	"gitlab.com/gilden/fortis/authorization"
 	"gitlab.com/gilden/fortis/cmd/fortis_api/server"
+	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 )
-
-func readConfig(filename string) (*viper.Viper, error) {
-	v := viper.New()
-	v.SetConfigType("toml")
-	v.SetConfigName(filename)
-	v.AddConfigPath("./config")
-	err := v.ReadInConfig()
-
-	return v, err
-}
 
 const sessionName = "authentication"
 
@@ -30,12 +20,9 @@ func main() {
 		" | | | | (_) \\ V / (_| | \n" +
 		" |_| |_|\\___/ \\_/ \\__,_| \n")
 
-	config, err := readConfig("config.dev")
-	if err != nil {
-		logging.Panic(err)
-	}
+	config := configuration.New()
 
-	err = logging.Setup(config)
+	err := logging.Setup(config)
 	if err != nil {
 		logging.Panic(err)
 	}

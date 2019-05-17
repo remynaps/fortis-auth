@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/models"
 
 	"github.com/gorilla/mux"
@@ -16,7 +16,7 @@ import (
 )
 
 type Server struct {
-	config  *viper.Viper
+	config  *configuration.Config
 	logger  *logrus.Logger
 	server  *http.Server
 	session *sessions.CookieStore
@@ -63,10 +63,10 @@ type ErrorResponseData struct {
 
 // NewServer returns a new instance of a Server configured with the provided
 // configuration
-func NewServer(config *viper.Viper, db *models.DB) (*Server, error) {
+func NewServer(config *configuration.Config, db *models.DB) (*Server, error) {
 
-	hostAddress := config.GetString("server.host_address")
-	hostPort := config.GetString("server.host_port")
+	hostAddress := config.Server.HostAddress
+	hostPort := config.Server.HostPort
 
 	addr := net.JoinHostPort(hostAddress, hostPort)
 

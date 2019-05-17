@@ -29,9 +29,9 @@ var microsoftOauthConfig = &oauth2.Config{
 
 // the main login handler for microsoft oauth
 func (server *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Request) *RequestError {
-	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	session, err := server.session.Get(r, server.config.Server.SessionName)
 	if err != nil {
-		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.Server.SessionName, err)
 	}
 
 	// set the state variable in the session
@@ -53,7 +53,7 @@ func (server *Server) MicrosoftLoginHandler(w http.ResponseWriter, r *http.Reque
 
 // handle the microsoft callback
 func (server *Server) handleMicrosoftCallback(w http.ResponseWriter, r *http.Request) *RequestError {
-	session, _ := server.session.Get(r, server.config.GetString("session.name"))
+	session, _ := server.session.Get(r, server.config.Server.SessionName)
 
 	// is the nonce "state" valid?
 	queryState := r.URL.Query().Get("state")

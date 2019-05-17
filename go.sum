@@ -264,8 +264,6 @@ github.com/xdg/stringprep v1.0.0/go.mod h1:Jhud4/sHMO4oL310DaZAKk9ZaJ08SJfe+sJh0
 github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77/go.mod h1:aYKd//L2LvnjZzWKhF00oedf4jCCReLcmhLdhm1A27Q=
 gitlab.com/gilden/fortis v0.0.0-20190417195546-a9e3b3776d77/go.mod h1:SmCsQpz+u2KRhdYMuvWAevybU76V48BWOkD56mMyK1M=
 gitlab.com/nyarla/go-crypt v0.0.0-20160106005555-d9a5dc2b789b/go.mod h1:T3BPAOm2cqquPa0MKWeNkmOM5RQsRhkrwMWonFMN7fE=
-gitlab.com/remynaps/fortis-hydra v0.0.0-20190428155336-fc1b78e3349a h1:6tDvEPNV+MOK1W2gGnE/d8WKPQLAB48rmnaqHsBMZ3I=
-gitlab.com/remynaps/fortis-hydra v0.0.0-20190428155336-fc1b78e3349a/go.mod h1:l47nqQmfhAjC5Eod7DDiXvzihtqQh1eSCyGALtWS5gs=
 go.opencensus.io v0.17.0/go.mod h1:mp1VrMQxhlqqDpKvH4UcQUa4YwlzNmymAjPrDdfxNpI=
 go.opencensus.io v0.18.0/go.mod h1:vKdFvxhtzZ9onBp9VKHK8z/sRpBMnKAsufL7wlDrCOA=
 go.opencensus.io v0.20.1/go.mod h1:6WKK9ahsWS3RSO+PY9ZHZUfv2irvY6gN279GOPZjmmk=

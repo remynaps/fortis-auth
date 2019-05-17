@@ -38,9 +38,9 @@ func (server *Server) ValidateClientMiddleWare(next http.Handler) Handler {
 		clientID := r.URL.Query().Get("client_id")
 		redirect := r.URL.Query().Get("redirect_url")
 
-		session, err := server.session.Get(r, server.config.GetString("session.name"))
+		session, err := server.session.Get(r, server.config.Server.SessionName)
 		if err != nil {
-			logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+			logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.Server.SessionName, err)
 		}
 
 		if err != nil {

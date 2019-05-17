@@ -5,7 +5,7 @@ import (
 	"log"
 
 	uuid "github.com/satori/go.uuid"
-	"gitlab.com/remynaps/fortis-hydra/logging"
+	"gitlab.com/gilden/fortis/logging"
 )
 
 // UserExists checks if a user exists and returns a simple boolean

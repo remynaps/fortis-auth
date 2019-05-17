@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/logging"
 	"gitlab.com/gilden/fortis/models"
 
@@ -77,10 +78,7 @@ func initConfig() {
 }
 
 func dbConnect(cmd *cobra.Command, args []string) {
-	config, err := readConfig("config.dev")
-	if err != nil {
-		logging.Panic(err)
-	}
+	config := configuration.New()
 	db, err := models.InitDB(config)
 	if err != nil {
 		// db connection failed. start the retry logic

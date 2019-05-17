@@ -37,9 +37,9 @@ var googleOauthConfig = &oauth2.Config{
 func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request) *RequestError {
 	logging.Debug("/auth/google called")
 
-	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	session, err := server.session.Get(r, server.config.Server.SessionName)
 	if err != nil {
-		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+		logging.Debug("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.Server.SessionName, err)
 	}
 
 	// set the state variable in the session
@@ -62,7 +62,7 @@ func (server *Server) GoogleLoginHandler(w http.ResponseWriter, r *http.Request)
 // handle the google callback
 func (server *Server) handleGoogleCallback(w http.ResponseWriter, r *http.Request) *RequestError {
 
-	session, _ := server.session.Get(r, server.config.GetString("session.name"))
+	session, _ := server.session.Get(r, server.config.Server.SessionName)
 
 	// is the nonce "state" valid?
 	queryState := r.URL.Query().Get("state")

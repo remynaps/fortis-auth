@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/correlationID"
 )
 
@@ -18,12 +18,12 @@ func init() {
 }
 
 // Setup configures the logger based on options in the config.json.
-func Setup(config *viper.Viper) error {
+func Setup(config *configuration.Config) error {
 	Logger.Formatter = &logrus.TextFormatter{DisableColors: false}
 
 	Logger.SetLevel(logrus.InfoLevel)
 	// Set up logging to a file if specified in the config
-	logFile := config.GetString("logging.file")
+	logFile := config.Logging.File
 	if logFile != "" {
 		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		if err != nil {

@@ -15,7 +15,9 @@ require (
 	github.com/gorilla/mux v1.7.1
 	github.com/gorilla/sessions v1.1.3
 	github.com/jtolds/gls v4.2.1+incompatible // indirect
+	github.com/kr/pty v1.1.3 // indirect
 	github.com/lestrrat/go-jwx v0.0.0-20180221005942-b7d4802280ae
+	github.com/lestrrat/go-pdebug v0.0.0-20180220043741-569c97477ae8 // indirect
 	github.com/lib/pq v1.1.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/satori/go.uuid v1.2.0
@@ -24,7 +26,6 @@ require (
 	github.com/smartystreets/goconvey v0.0.0-20180222194500-ef6db91d284a // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.3.2
-	gitlab.com/remynaps/fortis-hydra v0.0.0-20190428155336-fc1b78e3349a
 	golang.org/x/crypto v0.0.0-20190404164418-38d8ce5564a5
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	gopkg.in/ini.v1 v1.39.0 // indirect

@@ -93,7 +93,7 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 			Error(w, errors.New("Invalid redirect url"), requestID, 400, logging.Logger)
 		}
 
-		session, _ := server.session.Get(r, server.config.GetString("session.name"))
+		session, _ := server.session.Get(r, server.config.Server.SessionName)
 
 		// Check if the supplied redirect url equals the url supplied in the first call
 		existingRedirect := session.Values["redirect"].(string)
@@ -142,7 +142,7 @@ func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 // authenticated checks if our cookie store has a user stored and returns the
 // user's name, or an empty string if the user is not yet authenticated.
 func (server *Server) authenticated(r *http.Request) string {
-	session, _ := server.session.Get(r, server.config.GetString("session.name"))
+	session, _ := server.session.Get(r, server.config.Server.SessionName)
 	if u, ok := session.Values["user"]; !ok {
 		return ""
 	} else if user, ok := u.(string); !ok {
@@ -167,9 +167,9 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *Reque
 	redirect := r.URL.Query().Get("redirect_url")
 	state := r.URL.Query().Get("state")
 
-	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	session, err := server.session.Get(r, server.config.Server.SessionName)
 	if err != nil {
-		logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.GetString("session.name"), err)
+		logging.Warning("couldn't find existing encrypted secure cookie with name %s: %s (probably fine)", server.config.Server.SessionName, err)
 	}
 
 	if err != nil {
@@ -279,7 +279,7 @@ func (server *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	logging.Debug("saving session")
 	server.session.MaxAge(-1)
-	session, err := server.session.Get(r, server.config.GetString("session.name"))
+	session, err := server.session.Get(r, server.config.Server.SessionName)
 	if err != nil {
 		logging.Error(err)
 	}
