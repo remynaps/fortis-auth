@@ -1,8 +1,10 @@
 package main
 
 import (
+	"flag"
 	"log"
 
+	"github.com/joho/godotenv"
 	"gitlab.com/gilden/fortis/authorization"
 	"gitlab.com/gilden/fortis/cmd/fortis_api/server"
 	"gitlab.com/gilden/fortis/configuration"
@@ -14,11 +16,23 @@ const sessionName = "authentication"
 
 func main() {
 
+	var envFile string
+	flag.StringVar(&envFile, "env-file", "", "Use an env file to load variables")
+	flag.Parse()
+
 	logging.Info("\n" +
 		"  _ __   _____   ____ _ \n" +
 		" | '_ \\ / _ \\ \\ / / _` | \n" +
 		" | | | | (_) \\ V / (_| | \n" +
 		" |_| |_|\\___/ \\_/ \\__,_| \n")
+
+	if envFile != "" {
+		// First, load the environment variables
+		err := godotenv.Load()
+		if err != nil {
+			log.Fatal("Error loading .env file")
+		}
+	}
 
 	config := configuration.New()
 

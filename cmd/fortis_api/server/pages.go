@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"gitlab.com/gilden/fortis/authorization"
 	"gitlab.com/gilden/fortis/logging"
 )
 
@@ -64,10 +65,32 @@ func (server *Server) fileHandler(w http.ResponseWriter, r *http.Request) *Reque
 			return &RequestError{err, 405, "The redirect uri is not registred for this client"}
 		}
 
+		user := server.authenticated(r)
+		if user != "" {
+			usr, err := server.store.GetUserByExternalID(user)
+			if err != nil {
+				return &RequestError{err, 500, "Failed to retrieve user"}
+			}
+
+			// Finally, generate the jwt
+			token, err := authorization.CompleteFlow(usr, server.store)
+
+			if err != nil {
+				return &RequestError{err, 500, "Failed to create token"}
+			}
+
+			if redirect == "" {
+				http.Redirect(w, r, "/", http.StatusFound)
+			} else {
+				http.Redirect(w, r, redirect+"?token="+token, http.StatusFound)
+			}
+			return nil
+		}
+
 		// Set the values
 		session.Values["redirect"] = redirect
 		session.Values["client_id"] = clientID
-		session.Values["state"] = clientID
+		session.Values["state"] = state
 
 		// Store the session in the cookie
 		if err := server.session.Save(r, w, session); err != nil {
@@ -134,26 +157,4 @@ func (server *Server) errorFileHandler(w http.ResponseWriter, r *http.Request) {
 	template.ErrorHint = errorHint
 
 	t.Execute(w, template) // merge.
-}
-
-// LogoutHandler /logout
-// currently performs a 302 redirect to Google
-func (server *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
-	logging.Debug("/logout")
-
-	logging.Debug("saving session")
-	server.session.MaxAge(-1)
-	session, err := server.session.Get(r, server.config.Server.SessionName)
-	if err != nil {
-		logging.Error(err)
-	}
-	session.Save(r, w)
-	server.session.MaxAge(300)
-
-	var requestedURL = r.URL.Query().Get("url")
-	if requestedURL != "" {
-		http.Redirect(w, r, requestedURL, http.StatusFound)
-	} else {
-		http.Redirect(w, r, "/loggedout", http.StatusFound)
-	}
 }

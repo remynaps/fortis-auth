@@ -6,8 +6,6 @@ import (
 
 	// postgres driver
 
-	"github.com/golang-migrate/migrate/v4"
-	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	"gitlab.com/gilden/fortis/configuration"
@@ -81,22 +79,22 @@ func InitDB(config *configuration.Config) (*DB, error) {
 	connection := config.Database.DatabasePath
 	db, err := sql.Open("postgres", connection)
 
-	migrationsPath := config.Database.MigrationsPath
+	// migrationsPath := config.Database.MigrationsPath
 
-	// Migrate the db
-	driver, err := postgres.WithInstance(db, &postgres.Config{})
+	// // Migrate the db
+	// driver, err := postgres.WithInstance(db, &postgres.Config{})
 
-	m, err := migrate.NewWithDatabaseInstance(
-		migrationsPath,
-		"postgres", driver)
+	// m, err := migrate.NewWithDatabaseInstance(
+	// 	migrationsPath,
+	// 	"postgres", driver)
 
-	if err != nil {
-		logging.Error(err)
-		return nil, err
-	}
+	// if err != nil {
+	// 	logging.Error(err)
+	// 	return nil, err
+	// }
 
-	// 1 step
-	m.Up()
+	// // 1 step
+	// m.Up()
 
 	if err != nil {
 		logging.Error(err)

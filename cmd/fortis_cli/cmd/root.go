@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
+
+	"github.com/joho/godotenv"
 
 	"gitlab.com/gilden/fortis/configuration"
 	"gitlab.com/gilden/fortis/logging"
@@ -39,6 +42,12 @@ func Execute() {
 }
 
 func init() {
+	// First, load the environment variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
 	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.

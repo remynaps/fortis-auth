@@ -29,6 +29,28 @@ func StatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("API is up and running"))
 }
 
+// LogoutHandler /logout
+// currently performs a 302 redirect to Google
+func (server *Server) logoutHandler(w http.ResponseWriter, r *http.Request) {
+	logging.Debug("/logout")
+
+	logging.Debug("saving session")
+	server.session.MaxAge(-1)
+	session, err := server.session.Get(r, server.config.Server.SessionName)
+	if err != nil {
+		logging.Error(err)
+	}
+	session.Save(r, w)
+	server.session.MaxAge(300)
+
+	var requestedURL = r.URL.Query().Get("url")
+	if requestedURL != "" {
+		http.Redirect(w, r, requestedURL, http.StatusFound)
+	} else {
+		http.Redirect(w, r, "/loggedout", http.StatusFound)
+	}
+}
+
 func (server *Server) exchangeCode(w http.ResponseWriter, r *http.Request) {
 
 	// 0. User needs to be logged in! inspect session!!!

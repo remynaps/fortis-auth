@@ -15,3 +15,5 @@
 /config
 fortis
 /bin
+
+.env

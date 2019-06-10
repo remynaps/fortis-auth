@@ -122,6 +122,7 @@ func (ws *Server) registerRoutes() {
 
 	// ----- social login ------
 	router.Handle("/login/google", ws.ValidateClientMiddleWare(Handler(ws.GoogleLoginHandler)))
+	router.Handle("/login/apple", ws.ValidateClientMiddleWare(Handler(ws.AppleLoginHandler)))
 	router.Handle("/login/microsoft", ws.ValidateClientMiddleWare(Handler(ws.MicrosoftLoginHandler)))
 
 	// ----- oauth callbacks ------

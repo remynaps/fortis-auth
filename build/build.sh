@@ -1,6 +1,6 @@
 
 if [ "$1" == "-linux" ]; then
-  export GOOS=linux
+  export CGO_ENABLED=0 GOOS=linux
   echo "building for Linux.."
 else
   echo "building for OSX.."

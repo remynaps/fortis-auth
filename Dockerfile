@@ -17,12 +17,21 @@ COPY . .
 RUN bash build/build.sh -linux
 
 # Create an application image that will be pushed to re register
-FROM google/debian:wheezy
+FROM alpine:3.7
 MAINTAINER Remy Span
+
+# add openssl and trusted certificates
+RUN apk add openssl ca-certificates
 
 # Add the api binary
 COPY --from=0 /fortis/bin .
 
-ENV PORT 6767
-EXPOSE 6767
+# Add the required directories
+COPY --from=0 /fortis/config ./config
+COPY --from=0 /fortis/migrations ./migrations
+COPY --from=0 /fortis/static ./static
+COPY --from=0 /fortis/templates ./templates
+
+ENV PORT 8081
+EXPOSE 8081
 CMD ["./fortis_api"]

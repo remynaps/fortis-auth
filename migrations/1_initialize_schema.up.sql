@@ -22,8 +22,8 @@ CREATE TABLE public.user_credentials
     id uuid NOT NULL PRIMARY KEY,
     user_id text COLLATE pg_catalog."default" NOT NULL,
     password text COLLATE pg_catalog."default" NOT NULL,
-    compromised boolean COLLATE pg_catalog."default" NOT NULL,
-    scheme_version int COLLATE pg_catalog."default" NOT NULL,
+    compromised boolean NOT NULL,
+    scheme_version int NOT NULL,
     last_updated date NOT NULL DEFAULT ('now'::text)::date
 );
 
