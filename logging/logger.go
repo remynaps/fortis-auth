@@ -19,7 +19,12 @@ func init() {
 
 // Setup configures the logger based on options in the config.json.
 func Setup(config *configuration.Config) error {
-	Logger.Formatter = &logrus.TextFormatter{DisableColors: false}
+
+	if config.Logging.Mode == "prod" {
+		Logger.Formatter = &logrus.JSONFormatter{}
+	} else {
+		Logger.Formatter = &logrus.TextFormatter{DisableColors: false}
+	}
 
 	Logger.SetLevel(logrus.InfoLevel)
 	// Set up logging to a file if specified in the config

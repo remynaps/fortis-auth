@@ -34,6 +34,7 @@ type MicrosoftConfig struct {
 
 type LoggingConfig struct {
 	File string
+	Mode string
 }
 
 type Config struct {
@@ -73,6 +74,7 @@ func New() *Config {
 		},
 		Logging: LoggingConfig{
 			File: getEnv("LOGGING_FILE_PATH", ""),
+			Mode: getEnv("LOGGING_MODE", "prod"),
 		},
 	}
 }
