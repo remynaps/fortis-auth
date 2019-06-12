@@ -1,0 +1,14 @@
+version: '1'
+services:
+  web:
+    image: "fortis:latest" 
+    ports:
+      - "5000:5000"
+    depends_on:
+      - db
+    env_file:
+      - ./.env
+    volumes:
+      - ~/.ssh:/root/.ssh
+  db:
+    image: "postgres:alpine"

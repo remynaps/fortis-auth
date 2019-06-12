@@ -27,7 +27,6 @@ RUN apk add openssl ca-certificates
 COPY --from=0 /fortis/bin .
 
 # Add the required directories
-COPY --from=0 /fortis/config ./config
 COPY --from=0 /fortis/migrations ./migrations
 COPY --from=0 /fortis/static ./static
 COPY --from=0 /fortis/templates ./templates
